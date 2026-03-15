@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   font-family: 'Outfit', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -23,4 +21,11 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+}
+
+@theme {
+  --color-primary-light: #6d28d9;
+  --color-primary: #5b21b6;
+  --color-primary-dark: #4c1d95;
+  --color-secondary: #f43f5e;
 }
