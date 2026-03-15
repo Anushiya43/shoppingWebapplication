@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { LogIn, LayoutDashboard, Package, ShoppingCart, Users, BarChart3, LogOut, ShieldAlert, Smartphone, Hash, X, CheckCircle2 } from 'lucide-react'
+import {
+  LogIn, LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
+  LogOut, ShieldAlert, Smartphone, Hash, X, CheckCircle2, Layers
+} from 'lucide-react'
+import CategoriesPage from './components/CategoriesPage'
+import InventoryPage from './components/InventoryPage'
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams()
@@ -30,200 +35,204 @@ const AuthSuccess = () => {
 };
 
 const LoginModal = ({ isOpen, onClose }) => {
-    const { loginWithGoogle, loginWithPhone, verifyPhoneOtp } = useAuth();
-    const [step, setStep] = useState('choice'); // choice, phone, otp
-    const [phoneNumber, setPhoneNumber] = useState('');
-    const [otp, setOtp] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [isNewUser, setIsNewUser] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+  const { loginWithGoogle, loginWithPhone, verifyPhoneOtp } = useAuth();
+  const [step, setStep] = useState('choice'); // choice, phone, otp
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    const handlePhoneSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
-            const res = await loginWithPhone(phoneNumber);
-            setIsNewUser(res.data.isNewUser);
-            setStep('otp');
-        } catch (err) {
-            setError('Failed to send OTP. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handlePhoneSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await loginWithPhone(phoneNumber);
+      setIsNewUser(res.data.isNewUser);
+      setStep('otp');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleOtpSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        try {
-            await verifyPhoneOtp(phoneNumber, otp, firstName, lastName);
-            onClose();
-        } catch (err) {
-            setError('Invalid OTP. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await verifyPhoneOtp(phoneNumber, otp, firstName, lastName);
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400">
-                    <X size={20} />
-                </button>
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400">
+          <X size={20} />
+        </button>
 
-                <div className="p-10 text-center">
-                    <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                            {step === 'otp' && isNewUser ? 'Admin Setup' : 'Admin Login'}
-                        </h2>
-                        <p className="text-slate-500">
-                            {step === 'otp' && isNewUser ? 'Complete your admin profile.' : 'Secure access to your dashboard.'}
-                        </p>
-                    </div>
+        <div className="p-10 text-center">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">
+              {step === 'otp' && isNewUser ? 'Admin Setup' : 'Admin Login'}
+            </h2>
+            <p className="text-slate-500">
+              {step === 'otp' && isNewUser ? 'Complete your admin profile.' : 'Secure access to your dashboard.'}
+            </p>
+          </div>
 
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-medium flex items-center gap-3">
-                            <X size={16} /> {error}
-                        </div>
-                    )}
-
-                    {step === 'choice' && (
-                        <div className="space-y-4">
-                            <button 
-                                onClick={loginWithGoogle}
-                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95"
-                            >
-                                <LogIn size={20} /> Continue with Google
-                            </button>
-                            <button 
-                                onClick={() => setStep('phone')}
-                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
-                            >
-                                <Smartphone size={20} /> Continue with Phone
-                            </button>
-                        </div>
-                    )}
-
-                    {step === 'phone' && (
-                        <form onSubmit={handlePhoneSubmit} className="space-y-6 text-left">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
-                                <div className="relative">
-                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                                    <input 
-                                        type="tel" 
-                                        required
-                                        placeholder="+1 234 567 890"
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
-                                        value={phoneNumber}
-                                        onChange={(e) => setPhoneNumber(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <button 
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                {loading ? 'Sending...' : 'Send OTP'}
-                            </button>
-                            <button 
-                                type="button"
-                                onClick={() => setStep('choice')}
-                                className="w-full text-slate-500 text-sm font-medium hover:text-slate-900 transition-colors"
-                            >
-                                Go Back
-                            </button>
-                        </form>
-                    )}
-
-                    {step === 'otp' && (
-                        <form onSubmit={handleOtpSubmit} className="space-y-6 text-left">
-                            {isNewUser && (
-                                <div className="grid grid-cols-2 gap-4 auto-cols-auto">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">First Name</label>
-                                        <input 
-                                            type="text" 
-                                            required
-                                            placeholder="John"
-                                            className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-                                            value={firstName}
-                                            onChange={(e) => setFirstName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">Last Name</label>
-                                        <input 
-                                            type="text" 
-                                            required
-                                            placeholder="Doe"
-                                            className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-                                            value={lastName}
-                                            onChange={(e) => setLastName(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            <div className="space-y-2 text-center">
-                                <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl text-sm font-medium inline-block mb-2">
-                                    OTP sent to {phoneNumber}
-                                </div>
-                                <div className="relative">
-                                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                                    <input 
-                                        type="text" 
-                                        required
-                                        maxLength={6}
-                                        placeholder="Enter 6-digit code"
-                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center tracking-[0.5em] font-bold text-xl"
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <button 
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                {loading ? 'Verifying...' : (isNewUser ? 'Complete Setup' : 'Verify OTP')}
-                            </button>
-                            <button 
-                                type="button"
-                                onClick={() => setStep('phone')}
-                                className="w-full text-slate-500 text-sm font-medium hover:text-slate-900 transition-colors text-center"
-                            >
-                                Change Phone Number
-                            </button>
-                        </form>
-                    )}
-                </div>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-medium flex items-center gap-3">
+              <X size={16} /> {error}
             </div>
+          )}
+
+          {step === 'choice' && (
+            <div className="space-y-4">
+              <button
+                onClick={loginWithGoogle}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95"
+              >
+                <LogIn size={20} /> Continue with Google
+              </button>
+              <button
+                onClick={() => setStep('phone')}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
+              >
+                <Smartphone size={20} /> Continue with Phone
+              </button>
+            </div>
+          )}
+
+          {step === 'phone' && (
+            <form onSubmit={handlePhoneSubmit} className="space-y-6 text-left">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
+                <div className="relative">
+                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+1 234 567 890"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : 'Send OTP'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep('choice')}
+                className="w-full text-slate-500 text-sm font-medium hover:text-slate-900 transition-colors"
+              >
+                Go Back
+              </button>
+            </form>
+          )}
+
+          {step === 'otp' && (
+            <form onSubmit={handleOtpSubmit} className="space-y-6 text-left">
+              {isNewUser && (
+                <div className="grid grid-cols-2 gap-4 auto-cols-auto">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">First Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="John"
+                      className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Last Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Doe"
+                      className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2 text-center">
+                <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl text-sm font-medium inline-block mb-2">
+                  OTP sent to {phoneNumber}
+                </div>
+                <div className="relative">
+                  <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    placeholder="Enter 6-digit code"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center tracking-[0.5em] font-bold text-xl"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {loading ? 'Verifying...' : (isNewUser ? 'Complete Setup' : 'Verify OTP')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep('phone')}
+                className="w-full text-slate-500 text-sm font-medium hover:text-slate-900 transition-colors text-center"
+              >
+                Change Phone Number
+              </button>
+            </form>
+          )}
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 const Dashboard = () => {
   const { user, loginWithGoogle, logout } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
-  
+
   const [stats] = useState([
     { label: 'Total Revenue', value: '$12,450', change: '+12%', icon: '💰' },
     { label: 'Active Orders', value: '48', change: '+5', icon: '📦' },
     { label: 'Total Users', value: '1,204', change: '+18', icon: '👥' },
   ])
+
+  // Determine active view from URL
+  const currentPath = location.pathname;
 
   const error = searchParams.get('error');
 
@@ -254,21 +263,21 @@ const Dashboard = () => {
           </div>
           <h1 className="text-2xl font-bold mb-2">Admin Panel</h1>
           <p className="text-slate-500 mb-8">Please login with your authorized account to access the dashboard.</p>
-          
+
           <div className="space-y-4">
             <button
-                onClick={loginWithGoogle}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
+              onClick={loginWithGoogle}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
             >
-                <LogIn size={20} />
-                Continue with Google
+              <LogIn size={20} />
+              Continue with Google
             </button>
             <button
-                onClick={() => setLoginModalOpen(true)}
-                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
+              onClick={() => setLoginModalOpen(true)}
+              className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
             >
-                <Smartphone size={20} />
-                Continue with Phone
+              <Smartphone size={20} />
+              Continue with Phone
             </button>
           </div>
         </div>
@@ -350,21 +359,33 @@ const Dashboard = () => {
           </button>
         </div>
         <nav className="flex flex-col gap-2">
-          <a href="#" className="p-3 bg-blue-600 rounded-xl font-medium flex items-center gap-3">
+          <Link
+            to="/"
+            className={`p-3 rounded-xl font-medium flex items-center gap-3 transition-all ${currentPath === '/' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+          >
             <LayoutDashboard size={20} /> Dashboard
-          </a>
-          <a href="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
+          </Link>
+          <Link
+            to="/inventory"
+            className={`p-3 rounded-xl font-medium flex items-center gap-3 transition-all ${currentPath === '/inventory' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+          >
             <Package size={20} /> Inventory
-          </a>
-          <a href="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
+          </Link>
+          <Link
+            to="/categories"
+            className={`p-3 rounded-xl font-medium flex items-center gap-3 transition-all ${currentPath === '/categories' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+          >
+            <Layers size={20} /> Categories
+          </Link>
+          <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
             <ShoppingCart size={20} /> Orders
-          </a>
-          <a href="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
+          </Link>
+          <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
             <Users size={20} /> Users
-          </a>
-          <a href="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
+          </Link>
+          <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
             <BarChart3 size={20} /> Analytics
-          </a>
+          </Link>
         </nav>
       </aside>
 
@@ -392,42 +413,49 @@ const Dashboard = () => {
         </header>
 
         <div className="p-4 lg:p-8">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {stats.map((stat, i) => (
-              <div key={i} className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl">
-                    {stat.icon}
+          {currentPath === '/' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                {stats.map((stat, i) => (
+                  <div key={i} className="p-6 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl">
+                        {stat.icon}
+                      </div>
+                      <span className="text-green-600 font-bold text-sm bg-green-50 px-3 py-1 rounded-full">
+                        {stat.change}
+                      </span>
+                    </div>
+                    <div className="text-slate-500 text-sm font-medium mb-1">{stat.label}</div>
+                    <div className="text-3xl font-bold">{stat.value}</div>
                   </div>
-                  <span className="text-green-600 font-bold text-sm bg-green-50 px-3 py-1 rounded-full">
-                    {stat.change}
-                  </span>
-                </div>
-                <div className="text-slate-500 text-sm font-medium mb-1">{stat.label}</div>
-                <div className="text-3xl font-bold">{stat.value}</div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Chart Placeholder */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="p-8 bg-white border border-slate-100 rounded-3xl h-64 flex flex-col justify-center items-center">
-              <div className="text-slate-400 mb-2">Sales Analytics Chart</div>
-              <div className="h-1 bg-slate-100 w-full rounded-full relative overflow-hidden">
-                <div className="absolute left-0 top-0 h-full bg-blue-500 w-2/3"></div>
+              {/* Chart Placeholder */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="p-8 bg-white border border-slate-100 rounded-3xl h-64 flex flex-col justify-center items-center">
+                  <div className="text-slate-400 mb-2">Sales Analytics Chart</div>
+                  <div className="h-1 bg-slate-100 w-full rounded-full relative overflow-hidden">
+                    <div className="absolute left-0 top-0 h-full bg-blue-500 w-2/3"></div>
+                  </div>
+                  <p className="mt-4 text-sm text-slate-500">Feature: Coming soon in feature/analytics</p>
+                </div>
+                <div className="p-8 bg-white border border-slate-100 rounded-3xl h-64 flex flex-col justify-center items-center text-center">
+                  <div className="text-slate-400 mb-2">Top Best-selling Products</div>
+                  <div className="space-y-3 w-full">
+                    <div className="h-8 bg-slate-50 rounded-xl animate-pulse"></div>
+                    <div className="h-8 bg-slate-50 rounded-xl animate-pulse"></div>
+                    <div className="h-8 bg-slate-50 rounded-xl animate-pulse w-3/4 mx-auto"></div>
+                  </div>
+                </div>
               </div>
-              <p className="mt-4 text-sm text-slate-500">Feature: Coming soon in feature/analytics</p>
             </div>
-            <div className="p-8 bg-white border border-slate-100 rounded-3xl h-64 flex flex-col justify-center items-center text-center">
-              <div className="text-slate-400 mb-2">Top Best-selling Products</div>
-              <div className="space-y-3 w-full">
-                <div className="h-8 bg-slate-50 rounded-xl animate-pulse"></div>
-                <div className="h-8 bg-slate-50 rounded-xl animate-pulse"></div>
-                <div className="h-8 bg-slate-50 rounded-xl animate-pulse w-3/4 mx-auto"></div>
-              </div>
-            </div>
-          </div>
+          )}
+
+          {currentPath === '/categories' && <CategoriesPage />}
+          {currentPath === '/inventory' && <InventoryPage />}
         </div>
       </main>
     </div>
@@ -440,6 +468,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/inventory" element={<Dashboard />} />
+          <Route path="/categories" element={<Dashboard />} />
           <Route path="/auth-success" element={<AuthSuccess />} />
         </Routes>
       </Router>

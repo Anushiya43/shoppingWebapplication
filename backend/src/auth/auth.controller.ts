@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -44,7 +45,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refresh(@Body() body: { userId: string; refreshToken: string }) {
+  async refresh(@Body() body: RefreshTokenDto) {
     if (!body.userId || !body.refreshToken) {
         throw new UnauthorizedException('Invalid request');
     }
