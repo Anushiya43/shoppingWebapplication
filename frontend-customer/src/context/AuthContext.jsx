@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getProfile, googleLoginUrl } from '../api/auth';
+import { getProfile, googleLoginUrl, requestOtp, verifyOtp } from '../api/auth';
 
 const AuthContext = createContext();
 
@@ -29,6 +29,20 @@ export const AuthProvider = ({ children }) => {
     window.location.href = googleLoginUrl;
   };
 
+  const loginWithPhone = async (phoneNumber) => {
+    return await requestOtp(phoneNumber);
+  };
+
+  const verifyPhoneOtp = async (phoneNumber, otp, firstName, lastName) => {
+    const res = await verifyOtp(phoneNumber, otp, firstName, lastName);
+    if (res.data.access_token) {
+      setTokens(res.data.access_token, res.data.refresh_token, res.data.user.id);
+      setUser(res.data.user);
+      return res.data;
+    }
+    throw new Error('Verification failed');
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -43,7 +57,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginWithGoogle, logout, setTokens, setUser, initAuth }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      loginWithGoogle, 
+      loginWithPhone, 
+      verifyPhoneOtp, 
+      logout, 
+      setTokens, 
+      setUser, 
+      initAuth 
+    }}>
       {children}
     </AuthContext.Provider>
   );
