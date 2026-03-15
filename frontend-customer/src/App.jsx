@@ -1,87 +1,100 @@
-import { useState } from 'react'
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { LogIn, User, ShoppingBag, Search, Menu, LogOut } from 'lucide-react';
 
-export default function App() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+const AuthSuccess = () => {
+  const [searchParams] = useSearchParams();
+  const { setTokens, setUser } = useAuth();
+  const navigate = useNavigate();
 
-  return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans selection:bg-primary selection:text-white">
-      {/* Mobile Navbar */}
-      <nav className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10 px-6 py-4">
-        <div className="flex justify-between items-center max-w-7xl mx-auto">
-          <div className="text-2xl font-bold bg-gradient-to-r from-primary-light to-secondary bg-clip-text text-transparent">
-            FreshShop
-          </div>
-          
-          {/* Mobile Menu Button */}
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-white/70 hover:text-white"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-            </svg>
-          </button>
+  useEffect(() => {
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
+    const userId = searchParams.get('user_id');
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex gap-8 items-center">
-            <a href="#" className="text-white/70 hover:text-white transition-colors">Products</a>
-            <a href="#" className="text-white/70 hover:text-white transition-colors">Categories</a>
-            <a href="#" className="px-6 py-2 bg-primary rounded-full hover:bg-primary-light transition-all shadow-lg shadow-primary/20">Login</a>
-          </div>
+    if (accessToken && refreshToken) {
+      setTokens(accessToken, refreshToken, userId);
+      // In a real app, you'd fetch the user profile here or decode the token
+      navigate('/');
+      window.location.reload(); // Quick way to trigger AuthContext init
+    }
+  }, [searchParams, setTokens, navigate, setUser]);
+
+  return <div className="min-h-screen flex items-center justify-center">Logging you in...</div>;
+};
+
+const HomePage = () => {
+    const { user, loginWithGoogle, logout } = useAuth();
+
+    return (
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+            {/* Header */}
+            <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-100 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
+                    <div className="flex items-center gap-8">
+                        <div className="text-2x1 font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                            LuxeStore
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        {user ? (
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm font-medium">Hi, {user.firstName}</span>
+                                <button onClick={logout} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+                                    <LogOut size={20} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={loginWithGoogle}
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-full text-sm font-medium hover:bg-slate-800 transition-all active:scale-95"
+                            >
+                                <LogIn size={16} />
+                                Login with Google
+                            </button>
+                        )}
+                        <button className="p-2 hover:bg-slate-50 rounded-full transition-colors relative">
+                            <ShoppingBag size={20} />
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full border-2 border-white"></span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Hero Section */}
+            <main className="pt-24 pb-12 px-4 max-w-7xl mx-auto">
+                <div className="relative rounded-[2.5rem] overflow-hidden bg-slate-900 aspect-[16/9] md:aspect-[21/9] flex items-center">
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10"></div>
+                    <div className="relative z-20 px-8 md:px-16 max-w-2xl">
+                        <span className="text-blue-400 font-semibold tracking-wider uppercase text-sm mb-4 block">New Collection 2026</span>
+                        <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight"> Elevate Your Style with Luxury </h1>
+                        <p className="text-slate-300 text-lg mb-8 max-w-lg"> Experience the pinnacle of design and comfort with our curated luxury collection. </p>
+                        <button className="px-8 py-4 bg-white text-slate-900 rounded-full font-bold hover:bg-blue-50 transition-all flex items-center gap-3 group">
+                            Explore Now
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white group-hover:translate-x-1 transition-transform">
+                                →
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </main>
         </div>
+    );
+};
 
-        {/* Mobile Dropdown */}
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-slate-800 border-b border-white/10 py-6 px-6 animate-in slide-in-from-top-4 duration-200">
-            <div className="flex flex-col gap-6">
-              <a href="#" className="text-lg">Products</a>
-              <a href="#" className="text-lg">Categories</a>
-              <button className="w-full py-4 bg-primary rounded-xl font-bold">Login with Google</button>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      {/* Hero Section */}
-      <main className="px-6 py-12 max-w-7xl mx-auto">
-        <section className="text-center py-20 relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 blur-[120px] rounded-full -z-10"></div>
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
-            The Future of <br />
-            <span className="bg-gradient-to-r from-primary-light via-secondary to-primary-dark bg-clip-text text-transparent">
-              Modern Shopping
-            </span>
-          </h1>
-          <p className="text-white/60 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-            Experience the most premium, mobile-first ecommerce platform built with speed and aesthetics in mind.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-white text-slate-900 rounded-full font-bold hover:scale-105 transition-transform">
-              Start Shopping
-            </button>
-            <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-full font-bold hover:bg-white/10 transition-colors">
-              View Analytics
-            </button>
-          </div>
-        </section>
-
-        {/* Feature Cards Preview */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 py-12">
-          {[
-            { title: 'Ultra Fast', desc: 'Optimized for performance and blazing fast load times.' },
-            { title: 'Secure', desc: 'Enterprise-grade security with Google OAuth integration.' },
-            { title: 'Scalable', desc: 'Built on a robust NestJS and PostgreSQL foundation.' }
-          ].map((feature, i) => (
-            <div key={i} className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-primary/30 transition-colors group">
-              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <span className="text-primary text-xl">✨</span>
-              </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-white/50 leading-relaxed">{feature.desc}</p>
-            </div>
-          ))}
-        </section>
-      </main>
-    </div>
-  )
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/auth-success" element={<AuthSuccess />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
 }
+
+export default App;
