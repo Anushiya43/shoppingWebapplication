@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { LogIn, LayoutDashboard, Package, ShoppingCart, Users, BarChart3, LogOut, ShieldAlert } from 'lucide-react'
+import { LogIn, LayoutDashboard, Package, ShoppingCart, Users, BarChart3, LogOut, ShieldAlert, Smartphone, Hash, X, CheckCircle2 } from 'lucide-react'
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams()
@@ -29,12 +29,195 @@ const AuthSuccess = () => {
   return <div className="min-h-screen flex items-center justify-center">Authenticating Admin...</div>;
 };
 
+const LoginModal = ({ isOpen, onClose }) => {
+    const { loginWithGoogle, loginWithPhone, verifyPhoneOtp } = useAuth();
+    const [step, setStep] = useState('choice'); // choice, phone, otp
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [otp, setOtp] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [isNewUser, setIsNewUser] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    if (!isOpen) return null;
+
+    const handlePhoneSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        try {
+            const res = await loginWithPhone(phoneNumber);
+            setIsNewUser(res.data.isNewUser);
+            setStep('otp');
+        } catch (err) {
+            setError('Failed to send OTP. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOtpSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        try {
+            await verifyPhoneOtp(phoneNumber, otp, firstName, lastName);
+            onClose();
+        } catch (err) {
+            setError('Invalid OTP. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400">
+                    <X size={20} />
+                </button>
+
+                <div className="p-10 text-center">
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                            {step === 'otp' && isNewUser ? 'Admin Setup' : 'Admin Login'}
+                        </h2>
+                        <p className="text-slate-500">
+                            {step === 'otp' && isNewUser ? 'Complete your admin profile.' : 'Secure access to your dashboard.'}
+                        </p>
+                    </div>
+
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-medium flex items-center gap-3">
+                            <X size={16} /> {error}
+                        </div>
+                    )}
+
+                    {step === 'choice' && (
+                        <div className="space-y-4">
+                            <button 
+                                onClick={loginWithGoogle}
+                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95"
+                            >
+                                <LogIn size={20} /> Continue with Google
+                            </button>
+                            <button 
+                                onClick={() => setStep('phone')}
+                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
+                            >
+                                <Smartphone size={20} /> Continue with Phone
+                            </button>
+                        </div>
+                    )}
+
+                    {step === 'phone' && (
+                        <form onSubmit={handlePhoneSubmit} className="space-y-6 text-left">
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
+                                <div className="relative">
+                                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                                    <input 
+                                        type="tel" 
+                                        required
+                                        placeholder="+1 234 567 890"
+                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button 
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                {loading ? 'Sending...' : 'Send OTP'}
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => setStep('choice')}
+                                className="w-full text-slate-500 text-sm font-medium hover:text-slate-900 transition-colors"
+                            >
+                                Go Back
+                            </button>
+                        </form>
+                    )}
+
+                    {step === 'otp' && (
+                        <form onSubmit={handleOtpSubmit} className="space-y-6 text-left">
+                            {isNewUser && (
+                                <div className="grid grid-cols-2 gap-4 auto-cols-auto">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 ml-1">First Name</label>
+                                        <input 
+                                            type="text" 
+                                            required
+                                            placeholder="John"
+                                            className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 ml-1">Last Name</label>
+                                        <input 
+                                            type="text" 
+                                            required
+                                            placeholder="Doe"
+                                            className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                                            value={lastName}
+                                            onChange={(e) => setLastName(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            <div className="space-y-2 text-center">
+                                <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl text-sm font-medium inline-block mb-2">
+                                    OTP sent to {phoneNumber}
+                                </div>
+                                <div className="relative">
+                                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                                    <input 
+                                        type="text" 
+                                        required
+                                        maxLength={6}
+                                        placeholder="Enter 6-digit code"
+                                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center tracking-[0.5em] font-bold text-xl"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <button 
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                {loading ? 'Verifying...' : (isNewUser ? 'Complete Setup' : 'Verify OTP')}
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => setStep('phone')}
+                                className="w-full text-slate-500 text-sm font-medium hover:text-slate-900 transition-colors text-center"
+                            >
+                                Change Phone Number
+                            </button>
+                        </form>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Dashboard = () => {
   const { user, loginWithGoogle, logout } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   
   const [stats] = useState([
     { label: 'Total Revenue', value: '$12,450', change: '+12%', icon: '💰' },
@@ -64,19 +247,30 @@ const Dashboard = () => {
   if (!user && error !== 'admin_only') {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} />
         <div className="max-w-md w-full bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 text-center">
           <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <ShieldAlert className="text-blue-600" size={32} />
           </div>
           <h1 className="text-2xl font-bold mb-2">Admin Panel</h1>
-          <p className="text-slate-500 mb-8">Please login with your authorized Google account to access the dashboard.</p>
-          <button
-            onClick={loginWithGoogle}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
-          >
-            <LogIn size={20} />
-            Continue with Google
-          </button>
+          <p className="text-slate-500 mb-8">Please login with your authorized account to access the dashboard.</p>
+          
+          <div className="space-y-4">
+            <button
+                onClick={loginWithGoogle}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
+            >
+                <LogIn size={20} />
+                Continue with Google
+            </button>
+            <button
+                onClick={() => setLoginModalOpen(true)}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95"
+            >
+                <Smartphone size={20} />
+                Continue with Phone
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -85,6 +279,7 @@ const Dashboard = () => {
   if ((user && user.role !== 'ADMIN') || error === 'admin_only') {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 relative overflow-hidden">
+        <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} />
         {/* Animated Background Orbs */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -96,12 +291,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="space-y-4 mb-10">
+          <div className="space-y-4 mb-10 text-center flex flex-col items-center">
             <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight">
               Admin <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400 text-6xl block mt-2">Only Access</span>
             </h1>
-            <div className="h-1 w-24 bg-gradient-to-r from-red-50 to-orange-500 mx-auto rounded-full"></div>
-            <p className="text-slate-400 text-lg max-w-sm mx-auto leading-relaxed">
+            <div className="h-1 w-24 bg-gradient-to-r from-red-50 to-orange-500 mx-auto rounded-full mt-4"></div>
+            <p className="text-slate-400 text-lg max-w-sm mx-auto leading-relaxed mt-4">
               You do not have administrative privileges. Redirecting back to login in <span className="text-white font-bold text-2xl ml-1">{countdown}s</span>
             </p>
             <div className="w-full bg-white/10 h-1.5 rounded-full mt-4 overflow-hidden">
@@ -114,7 +309,7 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
-              onClick={user ? logout : loginWithGoogle}
+              onClick={user ? logout : () => setLoginModalOpen(true)}
               className="flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 rounded-2xl font-bold hover:bg-slate-100 transition-all active:scale-95 shadow-xl"
             >
               {user ? <LogOut size={20} /> : <LogIn size={20} />}

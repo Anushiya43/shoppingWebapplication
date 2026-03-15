@@ -38,6 +38,7 @@ model User {
   firstName   String
   lastName    String
   isBlocked   Boolean  @default(false)
+  phoneNumber String?  @unique
   refreshToken String?
   orders      Order[]
   cart        Cart?
@@ -126,4 +127,12 @@ model Coupon {
   orders      Order[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model Otp {
+  id          String   @id @default(uuid())
+  phoneNumber String   @unique
+  otp         String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
 }
