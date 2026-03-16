@@ -31,15 +31,19 @@ const OrdersManagementPage = () => {
     fetchOrders();
   }, []);
 
-  const handleStatusChange = async (orderId, newStatus) => {
+  const handleStatusChange = async (orderId, newStatus, trackingNumber) => {
     try {
-      await updateOrderStatus(orderId, newStatus);
+      const updateData = { status: newStatus };
+      if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;
+      
+      await updateOrderStatus(orderId, updateData);
+      
       // Update local state to reflect change immediately
       setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
+        order.id === orderId ? { ...order, ...updateData } : order
       ));
       if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, status: newStatus });
+        setSelectedOrder({ ...selectedOrder, ...updateData });
       }
     } catch (err) {
       console.error('Failed to update status:', err);
@@ -235,14 +239,38 @@ const OrdersManagementPage = () => {
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Customer Info</h4>
                   <p className="font-bold text-slate-900">{selectedOrder.user.firstName} {selectedOrder.user.lastName}</p>
                   <p className="text-sm text-slate-500">{selectedOrder.user.email}</p>
+                  <p className="text-xs text-slate-400 mt-2 uppercase font-bold">Shipping Address</p>
+                  <p className="text-sm text-slate-700">{selectedOrder.shippingAddress || 'N/A'}</p>
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Order Status</h4>
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(selectedOrder.status)}`}>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Order Management</h4>
+                  <div className="flex flex-col gap-3">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border w-fit ${getStatusColor(selectedOrder.status)}`}>
                         {getStatusIcon(selectedOrder.status)}
                         {selectedOrder.status}
                     </span>
+                    
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Tracking Number</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text"
+                          placeholder="Enter tracking ID..."
+                          className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                          defaultValue={selectedOrder.trackingNumber || ''}
+                          id="tracking-input"
+                        />
+                        <button 
+                          onClick={() => {
+                            const val = document.getElementById('tracking-input').value;
+                            handleStatusChange(selectedOrder.id, selectedOrder.status, val);
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

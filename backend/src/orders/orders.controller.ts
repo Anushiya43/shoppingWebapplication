@@ -21,8 +21,11 @@ export class OrdersController {
   @Put('admin/:id/status')
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
-  async updateStatus(@Param('id') orderId: string, @Body('status') status: string) {
-    return this.ordersService.updateOrderStatus(orderId, status);
+  async updateStatus(
+    @Param('id') orderId: string,
+    @Body() updateData: { status?: string; trackingNumber?: string },
+  ) {
+    return this.ordersService.updateOrderStatus(orderId, updateData);
   }
 
   @Post()
@@ -38,5 +41,10 @@ export class OrdersController {
   @Get(':id')
   async getOrderById(@Req() req, @Param('id') orderId: string) {
     return this.ordersService.getOrderById(req.user.id, orderId);
+  }
+
+  @Put(':id/cancel')
+  async cancelOrder(@Req() req, @Param('id') orderId: string) {
+    return this.ordersService.cancelOrder(req.user.id, orderId);
   }
 }

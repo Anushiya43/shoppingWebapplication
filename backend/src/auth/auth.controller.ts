@@ -53,7 +53,6 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN') // Example: Only admins can see profiles of all logged in sessions? Or just testing RBAC
   @Post('logout')
   async logout(@Req() req) {
     await this.authService.logout(req.user.id);
@@ -61,7 +60,6 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN')
   @Get('profile')
   async getProfile(@Req() req) {
     return req.user;

@@ -74,6 +74,7 @@ export class OrdersService {
           totalAmount: finalAmount,
           discountAmount,
           couponId: createOrderDto.couponId,
+          shippingAddress: createOrderDto.shippingAddress,
           orderItems: {
             create: orderItemsData,
           },
@@ -157,7 +158,7 @@ export class OrdersService {
     });
   }
 
-  async updateOrderStatus(orderId: string, status: any) {
+  async updateOrderStatus(orderId: string, updateData: { status?: any; trackingNumber?: string }) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
     });
@@ -168,7 +169,44 @@ export class OrdersService {
 
     return this.prisma.order.update({
       where: { id: orderId },
-      data: { status },
+      data: updateData,
+    });
+  }
+
+  async cancelOrder(userId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: { orderItems: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status !== 'PENDING' && order.status !== 'CONFIRMED') {
+      throw new BadRequestException('Only pending or confirmed orders can be cancelled');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Update order status
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED' as any },
+      });
+
+      // 2. Restore stock
+      for (const item of order.orderItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+
+      return updatedOrder;
     });
   }
 }

@@ -86,13 +86,23 @@ const LoginModal = ({ isOpen, onClose }) => {
         </button>
 
         <div className="p-10 text-center">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">
-              {step === 'otp' && isNewUser ? 'Admin Setup' : 'Admin Login'}
-            </h2>
-            <p className="text-slate-500">
-              {step === 'otp' && isNewUser ? 'Complete your admin profile.' : 'Secure access to your dashboard.'}
-            </p>
+          <div className="mb-8 flex items-center justify-center gap-3">
+            {(step === 'phone' || step === 'otp') && (
+              <button 
+                onClick={() => setStep(step === 'otp' ? 'phone' : 'choice')}
+                className="p-2 hover:bg-slate-50 rounded-full transition-colors -ml-12"
+              >
+                <ArrowLeft size={20} className="text-slate-400" />
+              </button>
+            )}
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                {step === 'otp' && isNewUser ? 'Admin Setup' : 'Admin Login'}
+              </h2>
+              <p className="text-slate-500">
+                {step === 'otp' && isNewUser ? 'Complete your admin profile.' : 'Secure access to your dashboard.'}
+              </p>
+            </div>
           </div>
 
           {error && (
@@ -400,9 +410,9 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <button
               className="lg:hidden p-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => currentPath === '/' ? setSidebarOpen(true) : navigate('/')}
             >
-              <Menu size={20} />
+              {currentPath === '/' ? <Menu size={20} /> : <ArrowLeft size={20} />}
             </button>
             <div className="truncate">
               <h1 className="text-lg lg:text-3xl font-bold truncate">Hi, {user.firstName}</h1>
