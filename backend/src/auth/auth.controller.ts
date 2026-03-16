@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -26,9 +27,9 @@ export class AuthController {
   async googleAuthRedirect(@Req() req, @Res() res, @Query('state') state: string) {
     const user = req.user;
     
-    // Redirect addresses based on port
-    const customerUrl = 'http://localhost:3001/auth-success';
-    const adminUrl = 'http://localhost:3002/auth-success';
+    // Redirect addresses based on environment variables
+    const customerUrl = `${process.env.FRONTEND_CUSTOMER_URL}/auth-success`;
+    const adminUrl = `${process.env.FRONTEND_ADMIN_URL}/auth-success`;
 
     // Role-based validation before token generation
     if (state === 'admin' && user.role !== 'ADMIN') {
@@ -44,7 +45,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refresh(@Body() body: { userId: string; refreshToken: string }) {
+  async refresh(@Body() body: RefreshTokenDto) {
     if (!body.userId || !body.refreshToken) {
         throw new UnauthorizedException('Invalid request');
     }
@@ -52,7 +53,6 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN') // Example: Only admins can see profiles of all logged in sessions? Or just testing RBAC
   @Post('logout')
   async logout(@Req() req) {
     await this.authService.logout(req.user.id);
@@ -60,7 +60,6 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN')
   @Get('profile')
   async getProfile(@Req() req) {
     return req.user;

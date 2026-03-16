@@ -8,11 +8,11 @@ export class PhoneService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
-  ) {}
+  ) { }
 
   async requestOtp(phoneNumber: string) {
     if (!phoneNumber) {
-        throw new BadRequestException('Phone number is required');
+      throw new BadRequestException('Phone number is required');
     }
 
     // Generate a 6-digit OTP
@@ -33,11 +33,11 @@ export class PhoneService {
 
     // SIMULATED SMS
     console.log(`[SMS Service] Sending OTP ${otp} to ${phoneNumber}`);
-    
-    return { 
-        message: 'OTP sent successfully', 
-        phoneNumber, 
-        isNewUser: !user || user.firstName === 'User' 
+
+    return {
+      message: 'OTP sent successfully',
+      phoneNumber,
+      isNewUser: !user || user.firstName === 'User'
     };
   }
 
@@ -72,7 +72,7 @@ export class PhoneService {
       const updateData: any = {};
       if (firstName) updateData.firstName = firstName;
       if (lastName) updateData.lastName = lastName;
-      
+
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: updateData,
