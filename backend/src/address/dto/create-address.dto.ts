@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsPhoneNumber } from 'clas
 export class CreateAddressDto {
   @IsString()
   @IsNotEmpty()
-  fullName: String;
+  fullName: string;
 
   @IsString()
   @IsNotEmpty()
