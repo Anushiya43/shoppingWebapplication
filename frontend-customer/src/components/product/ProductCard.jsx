@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package } from 'lucide-react';
+import { Package, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 
@@ -39,77 +39,92 @@ const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="bg-white p-2 sm:p-4 flex flex-col cursor-pointer group hover:shadow-md transition-shadow">
+    <div className="bg-white p-4 flex flex-col cursor-pointer group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl border border-gray-100 relative h-full">
+      {product.discountPercentage > 0 && (
+        <span className="absolute top-4 left-4 z-10 bg-accent-pink text-white text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-lg shadow-lg shadow-accent-pink/20">
+          -{Math.round(product.discountPercentage)}% OFF
+        </span>
+      )}
       {/* Product Image */}
-      <div className="aspect-square mb-2 flex items-center justify-center overflow-hidden bg-white relative">
+      <div className="aspect-square mb-4 flex items-center justify-center overflow-hidden bg-gray-50/50 rounded-xl relative group-hover:bg-white transition-colors duration-300">
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+            className="max-h-[85%] max-w-[85%] object-contain group-hover:scale-110 transition-transform duration-500 ease-out"
           />
         ) : (
-          <div className="w-full h-full bg-gray-50 flex items-center justify-center rounded">
-            <Package size={28} className="text-gray-300" />
+          <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+            <Package size={32} className="text-gray-200" />
           </div>
-        )}
-        {product.discountPercentage > 0 && (
-          <span className="absolute top-1 left-1 bg-[#CC0C39] text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-sm">
-            -{Math.round(product.discountPercentage)}%
-          </span>
         )}
       </div>
 
       {/* Product Title */}
-      <div className="text-amazon-blue text-xs sm:text-sm mb-1 line-clamp-2 leading-snug hover:text-amazon-orange">
+      <div className="text-primary-900 text-sm sm:text-base font-bold mb-2 line-clamp-2 leading-tight group-hover:text-accent-blue transition-colors">
         {product.name}
       </div>
 
       {/* Star Rating */}
-      <div className="flex items-center gap-0.5 mb-1">
-        <div className="flex text-amazon-orange">
+      <div className="flex items-center gap-1.5 mb-3">
+        <div className="flex text-accent-cyan">
           {[1, 2, 3, 4, 5].map(s => (
-            <span key={s} className="text-[11px]">★</span>
+            <span key={s} className="text-xs">★</span>
           ))}
         </div>
-        <span className="text-amazon-blue text-[10px] ml-0.5">128</span>
+        <span className="text-text-muted text-[11px] font-medium">({product.id.slice(-3)})</span>
       </div>
 
       {/* Pricing */}
       <div className="mt-auto">
         {discountedPrice ? (
-          <div>
-            <div className="text-sm sm:text-base font-medium text-amazon-text">
-              <span className="text-[10px] sm:text-sm align-top">₹</span>
-              {discountedPrice.toFixed(2)}
+          <div className="mb-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-black text-primary-900 leading-none">
+                <span className="text-sm font-bold mr-0.5">₹</span>
+                {discountedPrice.toLocaleString()}
+              </span>
             </div>
-            <div className="text-[10px] sm:text-xs text-gray-500">
-              M.R.P.: <span className="line-through">₹{Number(product.price).toFixed(2)}</span>
-              <span className="text-[#CC0C39] ml-1">({Math.round(product.discountPercentage)}%)</span>
+            <div className="text-[11px] font-medium text-text-muted mt-1">
+              MRP <span className="line-through mx-1">₹{Number(product.price).toLocaleString()}</span>
             </div>
           </div>
         ) : (
-          <div className="text-sm sm:text-base font-medium text-amazon-text">
-            <span className="text-[10px] sm:text-sm align-top">₹</span>
-            {Number(product.price).toFixed(2)}
+          <div className="mb-3">
+            <span className="text-xl sm:text-2xl font-black text-primary-900 leading-none">
+              <span className="text-sm font-bold mr-0.5">₹</span>
+              {Number(product.price).toLocaleString()}
+            </span>
           </div>
         )}
 
         {/* Stock badge */}
         {product.stock === 0 ? (
-          <div className="text-[10px] sm:text-xs text-red-600 font-medium mt-1">Out of Stock</div>
+          <div className="text-[11px] px-2 py-0.5 bg-red-50 text-red-500 font-bold rounded-lg w-fit mt-1">Out of Stock</div>
         ) : product.stock <= 5 ? (
-          <div className="text-[10px] sm:text-xs text-[#CC0C39] font-medium mt-1">Only {product.stock} left</div>
+          <div className="text-[11px] px-2 py-0.5 bg-accent-pink/10 text-accent-pink font-bold rounded-lg w-fit mt-1">Only {product.stock} left</div>
         ) : (
-          <div className="text-[10px] sm:text-xs text-green-700 font-medium mt-1">In Stock</div>
+          <div className="text-[11px] px-2 py-0.5 bg-green-50 text-green-600 font-bold rounded-lg w-fit mt-1">Secure in Stock</div>
         )}
 
         <button
-          className="w-full mt-2 py-1.5 sm:py-2 bg-gradient-to-b from-[#f7dfa5] to-[#f0c14b] border border-[#a88734] hover:from-[#f5d78e] text-amazon-text rounded-[3px] text-[11px] sm:text-sm font-medium shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+          className="w-full mt-4 py-3 bg-primary-900 hover:bg-primary-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-primary-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2"
           disabled={isOutOfStock || isAtMaxStock || adding}
           onClick={handleAddToCart}
         >
-          {adding ? 'Adding...' : isAtMaxStock ? 'Limit reached' : 'Add to Cart'}
+          {adding ? (
+            <span className="flex items-center gap-2">
+              <span className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full"></span>
+              Adding...
+            </span>
+          ) : isAtMaxStock ? (
+            'Stock limit reached'
+          ) : (
+            <>
+              <ShoppingCart size={16} />
+              Add to Cart
+            </>
+          )}
         </button>
       </div>
     </div>

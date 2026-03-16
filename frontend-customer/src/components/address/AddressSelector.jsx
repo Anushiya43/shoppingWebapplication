@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import AddressCard from './AddressCard';
 import AddressForm from './AddressForm';
-import { getAddresses, createAddress } from '../../api/address';
+import { getAddresses, createAddress, deleteAddress } from '../../api/address';
 
 const AddressSelector = ({ onAddressSelect, selectedId }) => {
   const [addresses, setAddresses] = useState([]);
@@ -36,6 +36,18 @@ const AddressSelector = ({ onAddressSelect, selectedId }) => {
     }
   };
 
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      await deleteAddress(addressId);
+      await fetchAddresses();
+      if (selectedId === addressId) {
+        onAddressSelect(null);
+      }
+    } catch (err) {
+      alert('Failed to remove address');
+    }
+  };
+
   if (loading) return <div className="text-sm text-gray-500">Loading addresses...</div>;
 
   return (
@@ -48,18 +60,19 @@ const AddressSelector = ({ onAddressSelect, selectedId }) => {
               address={addr} 
               isSelected={selectedId === addr.id}
               onClick={() => onAddressSelect(addr.id)}
+              onDelete={() => handleDeleteAddress(addr.id)}
             />
           ))}
           <button 
             onClick={() => setIsAdding(true)}
-            className="text-amazon-blue text-sm hover:text-amazon-orange hover:underline flex items-center gap-1 mt-2"
+            className="text-accent-blue text-sm font-black hover:text-primary-900 transition-colors flex items-center gap-2 mt-4 px-1"
           >
-            <Plus size={16} /> Add a new address
+            <Plus size={18} strokeWidth={3} /> Add New Shipping Destination
           </button>
         </div>
       ) : (
-        <div className="bg-gray-50 p-4 rounded border border-gray-200">
-          <h4 className="font-bold text-sm mb-4">Add a new address</h4>
+        <div className="bg-gray-50 p-6 rounded-[24px] border border-gray-100 shadow-inner">
+          <h4 className="font-black text-primary-900 uppercase tracking-widest text-xs mb-6 px-1">Register New Address</h4>
           <AddressForm 
             onSubmit={handleAddAddress} 
             onCancel={addresses.length > 0 ? () => setIsAdding(false) : null}

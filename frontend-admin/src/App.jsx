@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import {
   LogIn, LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   LogOut, ShieldAlert, Smartphone, Hash, X, CheckCircle2, Layers,
-  LayoutGrid, Menu
+  LayoutGrid, Menu, ArrowLeft
 } from 'lucide-react'
 import CategoriesPage from './components/CategoriesPage'
 import InventoryPage from './components/InventoryPage'

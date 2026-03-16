@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="bg-amazon-navy-800 text-white mt-10">
+    <footer className="bg-primary-800 text-white mt-12">
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className="w-full bg-[#37475a] hover:bg-[#485769] py-4 text-sm font-medium transition-colors"
+        className="w-full bg-primary-700 hover:bg-primary-900 py-5 text-sm font-bold transition-all border-b border-white/5"
       >
         Back to top
       </button>
@@ -15,10 +15,10 @@ const Footer = () => {
         <div>
           <h4 className="font-bold mb-4">Get to Know Us</h4>
           <ul className="space-y-2 text-sm text-gray-300">
-            <li><Link to="#" className="hover:underline text-gray-300">About Us</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Careers</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Press Releases</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Amazon Science</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">About Us</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Careers</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Press Releases</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Sustainability</Link></li>
           </ul>
         </div>
         <div>
@@ -32,44 +32,44 @@ const Footer = () => {
         <div>
           <h4 className="font-bold mb-4">Make Money with Us</h4>
           <ul className="space-y-2 text-sm text-gray-300">
-            <li><Link to="#" className="hover:underline text-gray-300">Sell on Amazon</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Sell under Amazon Accelerator</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Protect and Build Your Brand</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Amazon Global Selling</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Become a Seller</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Advertise Your Products</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Affiliate Program</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Vendor Central</Link></li>
           </ul>
         </div>
         <div>
           <h4 className="font-bold mb-4">Let Us Help You</h4>
           <ul className="space-y-2 text-sm text-gray-300">
-            <li><Link to="#" className="hover:underline text-gray-300">COVID-19 and Amazon</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Your Account</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">Returns Centre</Link></li>
-            <li><Link to="#" className="hover:underline text-gray-300">100% Purchase Protection</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Help Center</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Your Account</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Returns & Refunds</Link></li>
+            <li><Link to="#" className="hover:text-accent-cyan transition-colors">Purchase Protection</Link></li>
           </ul>
         </div>
       </div>
 
-      <div className="border-t border-gray-700 py-10 flex flex-col items-center gap-6">
+      <div className="border-t border-white/5 py-12 flex flex-col items-center gap-6">
         <div className="flex items-center gap-2">
-          <div className="text-2xl font-bold flex flex-col leading-none">
-            <span className="text-white">amazon</span>
-            <span className="text-amazon-orange text-xs text-right -mt-1 italic">.in</span>
+          <div className="text-2xl font-black tracking-tight flex items-center gap-1">
+            <span className="bg-gradient-to-r from-accent-cyan to-accent-blue bg-clip-text text-transparent">Modern</span>
+            <span className="text-white">Shop</span>
           </div>
         </div>
-        <div className="flex flex-wrap justify-center gap-4 text-[12px] text-gray-300">
-          {['Australia', 'Brazil', 'Canada', 'China', 'France', 'Germany', 'Italy', 'Japan', 'Mexico', 'Netherlands', 'Poland', 'Singapore', 'Spain', 'Turkey', 'United Arab Emirates', 'United Kingdom', 'United States'].map(country => (
-            <Link key={country} to="#" className="hover:underline text-gray-300">{country}</Link>
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-[12px] text-gray-400 font-medium max-w-2xl mx-auto">
+          {['Global Presence', 'United States', 'United Kingdom', 'Germany', 'France', 'Japan', 'India', 'Canada', 'Australia'].map(country => (
+            <Link key={country} to="#" className="hover:text-white transition-colors">{country}</Link>
           ))}
         </div>
       </div>
 
-      <div className="bg-amazon-navy-900 py-10 text-[12px] text-center text-gray-400">
-        <div className="flex justify-center gap-4 mb-2">
-          <Link to="#" className="hover:underline text-gray-400">Conditions of Use & Sale</Link>
-          <Link to="#" className="hover:underline text-gray-400">Privacy Notice</Link>
-          <Link to="#" className="hover:underline text-gray-400">Interest-Based Ads</Link>
+      <div className="bg-primary-900 py-12 text-[12px] text-center text-gray-500 border-t border-white/5">
+        <div className="flex justify-center gap-6 mb-4 font-medium">
+          <Link to="#" className="hover:text-white transition-colors">Conditions of Use</Link>
+          <Link to="#" className="hover:text-white transition-colors">Privacy Notice</Link>
+          <Link to="#" className="hover:text-white transition-colors">Your Ads Privacy Choices</Link>
         </div>
-        <p>© 1996-2026, Amazon.com, Inc. or its affiliates</p>
+        <p className="text-gray-600 font-medium italic opacity-60">© 2026 ModernShop. Designed for excellence.</p>
       </div>
     </footer>
   );

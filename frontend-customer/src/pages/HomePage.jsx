@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Package, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Package, ShieldAlert, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import ProductCard from '../components/product/ProductCard';
@@ -9,13 +9,102 @@ import { getCategories } from '../api/categories';
 import { useAuth } from '../context/AuthContext';
 
 const ProductCardSkeleton = () => (
-  <div className="bg-white p-2 sm:p-4 animate-pulse">
-    <div className="aspect-square bg-gray-200 mb-2 rounded"></div>
-    <div className="h-3 bg-gray-200 rounded mb-1.5 w-3/4"></div>
-    <div className="h-3 bg-gray-200 rounded mb-2 w-1/2"></div>
-    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+  <div className="bg-white p-4 rounded-xl shadow-sm animate-pulse flex flex-col h-full">
+    <div className="aspect-square bg-gray-100 mb-3 rounded-lg"></div>
+    <div className="h-4 bg-gray-100 rounded mb-2 w-3/4"></div>
+    <div className="h-4 bg-gray-100 rounded mb-3 w-1/2"></div>
+    <div className="mt-auto h-6 bg-gray-100 rounded w-1/3"></div>
   </div>
 );
+
+const BannerCarousel = () => {
+  const banners = [
+    {
+      id: 1,
+      image: '/banners/shopping_banner_vibrant_1773657561318.png',
+      title: 'Modern Style',
+      subtitle: 'Premium gadgets for your life'
+    },
+    {
+      id: 2,
+      image: '/banners/shopping_banner_fashion_1773657681034.png',
+      title: 'Elegance Redefined',
+      subtitle: 'Explore our latest collection'
+    },
+    {
+      id: 3,
+      image: '/banners/shopping_banner_tech_1773657700785.png',
+      title: 'Future Tech',
+      subtitle: 'Innovation at your fingertips'
+    }
+  ];
+
+  const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStart = useRef(0);
+  const touchEnd = useRef(0);
+
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = setInterval(() => {
+      setCurrent(prev => (prev === banners.length - 1 ? 0 : prev + 1));
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [banners.length, isPaused]);
+
+  const next = () => setCurrent(prev => (prev === banners.length - 1 ? 0 : prev + 1));
+  const prev = () => setCurrent(prev => (prev === 0 ? banners.length - 1 : prev - 1));
+
+  const handleTouchStart = (e) => touchStart.current = e.targetTouches[0].clientX;
+  const handleTouchMove = (e) => touchEnd.current = e.targetTouches[0].clientX;
+  const handleTouchEnd = () => {
+    if (touchStart.current - touchEnd.current > 70) next();
+    if (touchStart.current - touchEnd.current < -70) prev();
+  };
+
+  return (
+    <div 
+      className="relative w-full h-[250px] sm:h-[400px] md:h-[500px] overflow-hidden group mb-6 rounded-2xl shadow-xl"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="absolute inset-0 flex transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${current * 100}%)` }}>
+        {banners.map((banner) => (
+          <div key={banner.id} className="min-w-full h-full relative">
+            <img src={banner.image} alt={banner.title} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-primary-900/20 to-transparent flex flex-col justify-center px-8 md:px-20 text-white">
+              <h2 className="text-3xl md:text-5xl font-black mb-2 animate-fade-in-up">{banner.title}</h2>
+              <p className="text-lg md:text-xl text-cyan-200 mb-6 max-w-md">{banner.subtitle}</p>
+              <button className="w-fit px-8 py-3 bg-accent-blue hover:bg-accent-cyan text-white font-bold rounded-full transition-all shadow-lg hover:shadow-accent-blue/40 flex items-center gap-2">
+                Shop Now <ArrowRight size={20} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/40 opacity-0 group-hover:opacity-100 transition-all border border-white/30 hidden md:block">
+        <ChevronLeft size={28} />
+      </button>
+      <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/40 opacity-0 group-hover:opacity-100 transition-all border border-white/30 hidden md:block">
+        <ChevronRight size={28} />
+      </button>
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
+        {banners.map((_, i) => (
+          <button 
+            key={i} 
+            onClick={() => setCurrent(i)}
+            className={`transition-all duration-300 rounded-full ${current === i ? 'w-8 h-2.5 bg-accent-cyan shadow-cyan-500/50 shadow-sm' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/60'}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const HomePage = () => {
   const { user, logout } = useAuth();
@@ -35,28 +124,37 @@ const HomePage = () => {
       .catch(err => console.error('Failed to fetch categories:', err));
   }, []);
 
-  useEffect(() => {
+  const fetchProducts = async () => {
     setLoading(true);
     setError(null);
     const params = { limit: 20, page: 1 };
     if (searchQuery.trim()) params.search = searchQuery.trim();
     if (selectedCategoryId) params.categoryId = selectedCategoryId;
 
+    try {
+      const res = await getProducts(params);
+      const data = Array.isArray(res.data) ? res.data : (res.data.products || []);
+      setProducts(data);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+      setError('Could not load products. Is the backend running?');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     const timer = setTimeout(() => {
-      getProducts(params)
-        .then(res => {
-          const data = Array.isArray(res.data) ? res.data : (res.data.products || []);
-          setProducts(data);
-        })
-        .catch(err => {
-          console.error('Failed to fetch products:', err);
-          setError('Could not load products. Is the backend running?');
-        })
-        .finally(() => setLoading(false));
+      fetchProducts();
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery, selectedCategoryId]);
+
+  const handleSearch = (e) => {
+    if (e) e.preventDefault();
+    fetchProducts();
+  };
 
   const handleCategorySelect = (cat) => {
     if (cat === 'All') {
@@ -71,21 +169,21 @@ const HomePage = () => {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#EAEDED] text-amazon-text font-sans">
+    <div className="min-h-screen bg-surface-bg text-text-main font-sans selection:bg-accent-blue selection:text-white">
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} />
 
       {/* Mobile Category Drawer */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[200] flex">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileMenuOpen(false)} />
-          <div className="relative z-10 w-4/5 max-w-xs bg-white h-full flex flex-col shadow-2xl">
-            <div className="bg-amazon-navy-900 text-white px-4 py-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-lg font-bold">
+        <div className="fixed inset-0 z-[200] flex animate-fade-in">
+          <div className="absolute inset-0 bg-primary-900/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+          <div className="relative z-10 w-4/5 max-w-xs bg-white h-full flex flex-col shadow-[20px_0_60px_-15px_rgba(0,0,0,0.3)] animate-slide-in-left">
+            <div className="bg-primary-900 text-white px-6 py-8 flex flex-col gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-blue to-accent-pink flex items-center justify-center text-2xl font-black shadow-lg">
                 {user ? user.firstName?.[0]?.toUpperCase() : '?'}
               </div>
-              <div className="overflow-hidden">
-                <div className="text-[14px] text-gray-300">Hello,</div>
-                <div className="font-bold text-[19px] truncate">{user ? `${user.firstName} ${user.lastName || ''}` : 'Sign in'}</div>
+              <div>
+                <div className="text-sm text-cyan-200 font-medium">Welcome back,</div>
+                <div className="font-bold text-2xl tracking-tight truncate">{user ? user.firstName : 'Sign in'}</div>
               </div>
             </div>
             
@@ -94,7 +192,7 @@ const HomePage = () => {
                 <h3 className="font-bold text-lg mb-3">Shop by Category</h3>
                 <button
                   onClick={() => { handleCategorySelect('All'); setMobileMenuOpen(false); }}
-                  className={`w-full text-left px-3 py-3 rounded text-[14px] ${selectedCategory === 'All' ? 'bg-[#f3f3f3] font-bold' : 'hover:bg-gray-100'}`}
+                  className={`w-full text-left px-4 py-3 rounded-xl mb-1 text-[15px] transition-all ${selectedCategory === 'All' ? 'bg-primary-900 text-white font-bold shadow-md' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   All Categories
                 </button>
@@ -102,7 +200,7 @@ const HomePage = () => {
                   <button
                     key={cat.id}
                     onClick={() => { handleCategorySelect(cat); setMobileMenuOpen(false); }}
-                    className={`w-full text-left px-3 py-3 rounded text-[14px] ${selectedCategory === cat.name ? 'bg-[#f3f3f3] font-bold' : 'hover:bg-gray-100'}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl mb-1 text-[15px] transition-all ${selectedCategory === cat.name ? 'bg-primary-900 text-white font-bold shadow-md' : 'hover:bg-gray-100 text-gray-700'}`}
                   >
                     {cat.name}
                   </button>
@@ -113,13 +211,13 @@ const HomePage = () => {
                 <h3 className="font-bold text-lg mb-3">Help & Settings</h3>
                 {user ? (
                   <button onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="w-full text-left px-3 py-3 text-[14px] text-red-600 hover:bg-red-50 rounded">
+                    className="w-full text-left px-4 py-3 text-[15px] font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
                     Sign Out
                   </button>
                 ) : (
                   <button onClick={() => { setLoginModalOpen(true); setMobileMenuOpen(false); }}
-                    className="w-full px-4 py-2.5 bg-gradient-to-b from-[#f7dfa5] to-[#f0c14b] border border-[#a88734] text-amazon-text rounded-[4px] text-sm font-medium">
-                    Sign In
+                    className="w-full px-6 py-3.5 bg-primary-900 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-primary-800 transition-all active:scale-95">
+                    Sign In to Account
                   </button>
                 )}
               </div>
@@ -134,21 +232,31 @@ const HomePage = () => {
         onCategorySelect={handleCategorySelect}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onSearch={handleSearch}
         onMobileMenuOpen={() => setMobileMenuOpen(true)}
         onLoginClick={() => setLoginModalOpen(true)}
       />
 
       {/* Main Content */}
-      <main className="max-w-[1500px] mx-auto pb-20 md:pb-10">
-        <div className="px-2 sm:px-4 pt-3">
+      <main className="max-w-[1500px] mx-auto pb-20 md:pb-10 pt-4 px-4 sm:px-6">
+        
+        {/* Banner Section */}
+        {!searchQuery && selectedCategory === 'All' && <BannerCarousel />}
+
+        <div className="pt-2">
           {/* Section Title */}
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base sm:text-lg font-bold">
-              {searchQuery
-                ? `Results for "${searchQuery}"`
-                : selectedCategory !== 'All'
-                  ? selectedCategory
-                  : 'Trending now'}
+          <div className="flex items-center justify-between mb-6 px-1">
+            <h2 className="text-xl sm:text-2xl font-extrabold flex items-center gap-2">
+              {searchQuery ? (
+                <>
+                  <span className="text-primary-900">"{searchQuery}"</span>
+                  <span className="text-text-muted font-normal text-lg">Results</span>
+                </>
+              ) : selectedCategory !== 'All' ? (
+                <span className="text-primary-900">{selectedCategory}</span>
+              ) : (
+                <span className="text-primary-900">New Arrivals</span>
+              )}
             </h2>
             {!loading && (
               <span className="text-xs sm:text-sm text-gray-500">
@@ -167,19 +275,19 @@ const HomePage = () => {
           )}
 
           {/* Products Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-gray-200 border-x border-t border-gray-200">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
             {loading
               ? Array.from({ length: 10 }).map((_, i) => <ProductCardSkeleton key={i} />)
               : products.length > 0
                 ? products.map(product => <ProductCard key={product.id} product={product} />)
                 : !error && (
-                  <div className="col-span-full bg-white p-12 text-center">
-                    <Package size={40} className="text-gray-300 mx-auto mb-3" />
-                    <h3 className="text-lg font-medium text-gray-600 mb-1">No products found</h3>
-                    <p className="text-gray-400 text-sm">
+                  <div className="col-span-full bg-white rounded-3xl p-16 text-center border-2 border-dashed border-gray-100">
+                    <Package size={60} className="text-gray-200 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-primary-900 mb-2">No products found</h3>
+                    <p className="text-text-muted text-base max-w-sm mx-auto">
                       {searchQuery
-                        ? `No results for "${searchQuery}".`
-                        : 'No products yet. Add some via the Admin Panel.'}
+                        ? `We couldn't find anything matching "${searchQuery}". Try different keywords.`
+                        : 'Our inventory is temporarily empty. Check back soon for exciting new products!'}
                     </p>
                   </div>
                 )

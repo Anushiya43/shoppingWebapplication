@@ -28,8 +28,16 @@ const InventoryPage = () => {
     const [submitting, setSubmitting] = useState(false);
     const [notification, setNotification] = useState(null);
     const [filters, setFilters] = useState({ search: '', categoryId: '', page: 1 });
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setFilters(prev => ({ ...prev, search: searchTerm, page: 1 }));
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     useEffect(() => {
         fetchData();
@@ -177,8 +185,8 @@ const InventoryPage = () => {
                         type="search"
                         placeholder="Search products..."
                         className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                        value={filters.search}
-                        onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <div className="relative">
@@ -271,18 +279,20 @@ const InventoryPage = () => {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => openModal(prod)}
-                                                className="p-3 hover:bg-white hover:text-blue-600 hover:shadow-lg rounded-2xl transition-all text-slate-400 group/btn"
+                                                className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:shadow-md rounded-xl transition-all active:scale-95"
+                                                title="Edit product"
                                             >
-                                                <Edit2 size={20} />
+                                                <Edit2 size={18} />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(prod.id)}
-                                                className="p-3 hover:bg-white hover:text-red-600 hover:shadow-lg rounded-2xl transition-all text-slate-400"
+                                                className="p-2.5 bg-red-50 text-red-500 hover:bg-red-100 hover:shadow-md rounded-xl transition-all active:scale-95"
+                                                title="Delete product"
                                             >
-                                                <Trash2 size={20} />
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </td>
