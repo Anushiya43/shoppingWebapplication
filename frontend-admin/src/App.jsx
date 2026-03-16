@@ -3,10 +3,12 @@ import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate, L
 import { AuthProvider, useAuth } from './context/AuthContext'
 import {
   LogIn, LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
-  LogOut, ShieldAlert, Smartphone, Hash, X, CheckCircle2, Layers
+  LogOut, ShieldAlert, Smartphone, Hash, X, CheckCircle2, Layers,
+  LayoutGrid, Menu
 } from 'lucide-react'
 import CategoriesPage from './components/CategoriesPage'
 import InventoryPage from './components/InventoryPage'
+import OrdersManagementPage from './components/OrdersManagementPage'
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams()
@@ -325,7 +327,7 @@ const Dashboard = () => {
               {user ? 'Logout Now' : 'Login Admin'}
             </button>
             <a
-              href="http://localhost:3001"
+              href={import.meta.env.VITE_STOREFRONT_URL}
               className="flex items-center justify-center gap-3 px-8 py-5 bg-white/10 text-white border border-white/10 rounded-2xl font-bold hover:bg-white/15 transition-all active:scale-95 backdrop-blur-md"
             >
               <ShoppingCart size={20} />
@@ -355,7 +357,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-10 lg:block">
           <div className="text-2xl font-bold text-blue-400">AdminPanel</div>
           <button className="lg:hidden p-2 text-slate-400" onClick={() => setSidebarOpen(false)}>
-            <ShieldAlert size={24} /> {/* Using an icon since X isn't imported yet, I'll add Menu/X later */}
+            <X size={24} />
           </button>
         </div>
         <nav className="flex flex-col gap-2">
@@ -375,9 +377,12 @@ const Dashboard = () => {
             to="/categories"
             className={`p-3 rounded-xl font-medium flex items-center gap-3 transition-all ${currentPath === '/categories' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
           >
-            <Layers size={20} /> Categories
+            <LayoutGrid size={20} /> Categories
           </Link>
-          <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
+          <Link
+            to="/orders"
+            className={`p-3 rounded-xl font-medium flex items-center gap-3 transition-all ${currentPath === '/orders' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+          >
             <ShoppingCart size={20} /> Orders
           </Link>
           <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3 text-slate-400">
@@ -397,7 +402,7 @@ const Dashboard = () => {
               className="lg:hidden p-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50"
               onClick={() => setSidebarOpen(true)}
             >
-              <LayoutDashboard size={20} />
+              <Menu size={20} />
             </button>
             <div className="truncate">
               <h1 className="text-lg lg:text-3xl font-bold truncate">Hi, {user.firstName}</h1>
@@ -456,6 +461,7 @@ const Dashboard = () => {
 
           {currentPath === '/categories' && <CategoriesPage />}
           {currentPath === '/inventory' && <InventoryPage />}
+          {currentPath === '/orders' && <OrdersManagementPage />}
         </div>
       </main>
     </div>
@@ -470,6 +476,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/inventory" element={<Dashboard />} />
           <Route path="/categories" element={<Dashboard />} />
+          <Route path="/orders" element={<Dashboard />} />
           <Route path="/auth-success" element={<AuthSuccess />} />
         </Routes>
       </Router>
