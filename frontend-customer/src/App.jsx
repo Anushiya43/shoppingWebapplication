@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { LogIn, User, ShoppingBag, Search, Menu, LogOut, Smartphone, Hash, X, CheckCircle2, MapPin, ShoppingCart, ChevronDown, MapPinned, ShieldAlert, Package, Star, Tag } from 'lucide-react';
+import { CartProvider, useCart } from './context/CartContext';
+import { LogIn, User, ShoppingBag, Search, Menu, LogOut, Smartphone, Hash, X, CheckCircle2, MapPin, ShoppingCart, ChevronDown, MapPinned, ShieldAlert, Package, Star, Tag, Trash2, Plus, Minus, CreditCard, Truck } from 'lucide-react';
 import { getProducts } from './api/products';
 import { getCategories } from './api/categories';
 
@@ -209,9 +210,39 @@ const LoginModal = ({ isOpen, onClose }) => {
 };
 
 const ProductCard = ({ product }) => {
+  const { cart, addItem } = useCart();
+  const { user } = useAuth();
+  const [adding, setAdding] = useState(false);
+
   const discountedPrice = product.discountPercentage
     ? product.price * (1 - product.discountPercentage / 100)
     : null;
+
+  const cartItem = cart?.items?.find(item => item.productId === product.id);
+  const currentQuantityInCart = cartItem ? cartItem.quantity : 0;
+  const isOutOfStock = product.stock === 0;
+  const isAtMaxStock = currentQuantityInCart >= product.stock;
+
+  const handleAddToCart = async (e) => {
+    e.stopPropagation();
+    if (!user) {
+      alert('Please sign in to add items to cart');
+      return;
+    }
+    setAdding(true);
+    try {
+      await addItem(product.id, 1);
+    } catch (err) {
+      console.error('Add to cart failed', err);
+      if (err.response?.data?.message) {
+        alert(err.response.data.message);
+      } else {
+        alert('Failed to add to cart. Please try again.');
+      }
+    } finally {
+      setAdding(false);
+    }
+  };
 
   return (
     <div className="bg-white p-2 sm:p-4 flex flex-col cursor-pointer group hover:shadow-md transition-shadow">
@@ -280,10 +311,11 @@ const ProductCard = ({ product }) => {
         )}
 
         <button
-          className="w-full mt-2 py-1.5 sm:py-2 bg-gradient-to-b from-[#f7dfa5] to-[#f0c14b] border border-[#a88734] hover:from-[#f5d78e] text-amazon-text rounded-[3px] text-[11px] sm:text-sm font-medium shadow-sm transition-all active:scale-95 disabled:opacity-50"
-          disabled={product.stock === 0}
+          className="w-full mt-2 py-1.5 sm:py-2 bg-gradient-to-b from-[#f7dfa5] to-[#f0c14b] border border-[#a88734] hover:from-[#f5d78e] text-amazon-text rounded-[3px] text-[11px] sm:text-sm font-medium shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+          disabled={isOutOfStock || isAtMaxStock || adding}
+          onClick={handleAddToCart}
         >
-          Add to Cart
+          {adding ? 'Adding...' : isAtMaxStock ? 'Limit reached' : 'Add to Cart'}
         </button>
       </div>
     </div>
@@ -301,6 +333,8 @@ const ProductCardSkeleton = () => (
 
 const HomePage = () => {
   const { user, logout } = useAuth();
+  const { cartCount } = useCart();
+  const navigate = useNavigate();
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -310,6 +344,8 @@ const HomePage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // ... rest of state and effects ...
 
   // Fetch categories on mount
   useEffect(() => {
@@ -482,19 +518,19 @@ const HomePage = () => {
             </div>
 
             {/* Returns */}
-            <div className="hidden lg:block p-2 border border-transparent hover:border-white rounded cursor-pointer leading-tight">
+            <Link to="/orders" className="hidden lg:block p-2 border border-transparent hover:border-white rounded cursor-pointer leading-tight">
               <div className="text-[11px]">Returns</div>
               <div className="text-xs font-bold">& Orders</div>
-            </div>
+            </Link>
 
             {/* Cart */}
-            <div className="p-2 border border-transparent hover:border-white rounded cursor-pointer flex items-center gap-1 relative">
+            <Link to="/cart" className="p-2 border border-transparent hover:border-white rounded cursor-pointer flex items-center gap-1 relative">
               <div className="relative">
                 <ShoppingCart size={28} />
-                <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-amazon-orange text-sm font-bold leading-none">0</span>
+                <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-amazon-orange text-sm font-bold leading-none">{cartCount}</span>
               </div>
               <span className="text-xs font-bold hidden sm:block">Cart</span>
-            </div>
+            </Link>
 
             {/* Logout button on desktop when logged in */}
             {user && (
@@ -606,13 +642,13 @@ const HomePage = () => {
           <User size={22} />
           <span className="text-[10px] font-medium">{user ? user.firstName : 'Sign In'}</span>
         </button>
-        <div className="flex flex-col items-center gap-0.5 text-gray-500 relative px-3">
+        <Link to="/cart" className="flex flex-col items-center gap-0.5 text-gray-500 relative px-3">
           <div className="relative">
             <ShoppingCart size={22} />
-            <span className="absolute -top-1.5 -right-1.5 bg-amazon-orange text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+            <span className="absolute -top-1.5 -right-1.5 bg-amazon-orange text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{cartCount}</span>
           </div>
           <span className="text-[10px] font-medium">Cart</span>
-        </div>
+        </Link>
         <button
           onClick={() => setMobileMenuOpen(true)}
           className="flex flex-col items-center gap-0.5 text-gray-500 px-3"
@@ -711,15 +747,360 @@ const HomePage = () => {
 };
 
 
+const CartPage = () => {
+  const { cart, loading, updateQuantity, removeItem, cartCount, cartTotal } = useCart();
+  const navigate = useNavigate();
+
+  if (loading && !cart) {
+    return (
+      <div className="min-h-screen bg-[#EAEDED] pt-10 px-4">
+        <div className="max-w-[1500px] mx-auto bg-white p-8 rounded shadow text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-amazon-orange border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p>Loading your cart...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#EAEDED] text-amazon-text font-sans pb-10">
+      <header className="sticky top-0 z-50 bg-amazon-navy-900 text-white p-3">
+        <div className="max-w-[1500px] mx-auto flex items-center justify-between">
+          <Link to="/" className="text-xl font-bold">amazon<span className="text-amazon-orange text-[10px] italic">.in</span></Link>
+          <div className="text-sm font-medium">Shopping Cart</div>
+        </div>
+      </header>
+
+      <main className="max-w-[1500px] mx-auto p-4 flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 bg-white p-6 rounded shadow">
+          <h1 className="text-2xl font-medium mb-4 pb-2 border-b border-gray-200">Shopping Cart</h1>
+          
+          {!cart?.items?.length ? (
+            <div className="py-10 text-center">
+              <ShoppingBag size={60} className="text-gray-200 mx-auto mb-4" />
+              <h2 className="text-xl font-bold mb-2">Your Amazon Cart is empty</h2>
+              <p className="text-sm text-gray-500 mb-6">Check your Saved for later items below or continue shopping.</p>
+              <Link to="/" className="bg-amazon-orange hover:bg-amazon-orange/90 px-6 py-2 rounded-[4px] text-sm font-medium text-amazon-navy-900">
+                Continue Shopping
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {cart.items.map((item) => {
+                const discountedPrice = item.product.discountPercentage 
+                  ? item.product.price * (1 - item.product.discountPercentage / 100)
+                  : item.product.price;
+                return (
+                  <div key={item.id} className="flex gap-4 pb-6 border-b border-gray-100 last:border-0">
+                    <div className="w-24 h-24 sm:w-40 sm:h-40 flex-shrink-0 bg-white">
+                      <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-contain" />
+                    </div>
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="text-sm sm:text-lg font-medium text-amazon-blue hover:text-amazon-orange cursor-pointer line-clamp-2 leading-tight">
+                          {item.product.name}
+                        </h3>
+                        <div className="text-right">
+                          <div className="font-bold text-lg">₹{Number(discountedPrice).toFixed(2)}</div>
+                          {item.product.discountPercentage > 0 && (
+                            <div className="text-xs text-gray-500 line-through">₹{Number(item.product.price).toFixed(2)}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-green-700 mb-2">In Stock</div>
+                      
+                      <div className="mt-auto flex items-center gap-4">
+                        <div className="flex items-center border border-gray-300 rounded-[8px] overflow-hidden shadow-sm bg-gray-50">
+                          <button 
+                            onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                            className="p-1.5 hover:bg-gray-200 text-gray-600 transition-colors"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="px-4 text-sm font-medium">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={item.quantity >= item.product.stock}
+                            className="p-1.5 hover:bg-gray-200 text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <div className="h-4 border-l border-gray-300"></div>
+                        <button 
+                          onClick={() => removeItem(item.id)}
+                          className="text-amazon-blue hover:underline text-xs flex items-center gap-1"
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="text-right text-lg">
+                Subtotal ({cartCount} item{cartCount !== 1 ? 's' : ''}): <span className="font-bold">₹{cartTotal.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {cart?.items?.length > 0 && (
+          <div className="w-full lg:w-72 flex flex-col gap-4">
+            <div className="bg-white p-5 rounded shadow">
+              <div className="flex items-center gap-2 text-green-700 text-xs mb-3">
+                <CheckCircle2 size={16} />
+                <span>Your order is eligible for FREE Delivery. Select this option at checkout for details.</span>
+              </div>
+              <div className="text-lg mb-4">
+                Subtotal ({cartCount} item{cartCount !== 1 ? 's' : ''}): <span className="font-bold">₹{cartTotal.toFixed(2)}</span>
+              </div>
+              <button 
+                onClick={() => navigate('/checkout')}
+                className="w-full py-2 bg-[#FFD814] hover:bg-[#F7CA00] border border-[#FCD200] rounded-[8px] text-sm font-medium shadow-sm active:scale-95 transition-all"
+              >
+                Proceed to Checkout
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+const CheckoutPage = () => {
+  const { user } = useAuth();
+  const { cart, cartCount, cartTotal, clearCart, refreshCart } = useCart();
+  const navigate = useNavigate();
+  const [isPlacing, setPlacing] = useState(false);
+  const [placed, setPlaced] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
+
+  const handlePlaceOrder = async () => {
+    setPlacing(true);
+    try {
+      const { createOrder } = await import('./api/orders');
+      await createOrder({}); // Empty DTO for now
+      setPlaced(true);
+      await clearCart();
+      setTimeout(() => navigate('/orders'), 3000);
+    } catch (err) {
+      alert('Failed to place order. Is the backend running?');
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  if (placed) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+        <CheckCircle2 size={64} className="text-green-500 mb-4" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Order placed, thank you!</h1>
+        <p className="text-gray-600 text-center mb-6">Confirmation will be sent to your email shortly.</p>
+        <button onClick={() => navigate('/orders')} className="text-amazon-blue hover:underline">Go to your orders</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#EAEDED] font-sans">
+      <header className="bg-amazon-navy-900 text-white p-4 h-16 flex items-center justify-center relative">
+        <Link to="/" className="text-xl font-bold">amazon<span className="text-amazon-orange text-[10px] italic">.in</span></Link>
+        <div className="absolute right-4 text-gray-400">
+           <ShieldAlert size={20} />
+        </div>
+      </header>
+
+      <main className="max-w-[1100px] mx-auto p-4 md:p-8">
+        <h1 className="text-2xl font-normal text-amazon-text mb-6">Checkout ({cartCount} item{cartCount !== 1 ? 's' : ''})</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
+          <div className="space-y-4">
+            {/* Delivery Address */}
+            <div className="bg-white p-5 rounded border border-gray-300 flex gap-10">
+              <span className="font-bold w-40 text-sm">1. Delivery address</span>
+              <div className="flex-1 text-[13px]">
+                <p className="font-bold">{user?.firstName} {user?.lastName}</p>
+                <p>Add your delivery address in settings</p>
+                <p>India</p>
+              </div>
+              <button className="text-amazon-blue text-xs hover:underline h-fit">Change</button>
+            </div>
+
+            {/* Payment Method */}
+            <div className="bg-white p-5 rounded border border-gray-300 flex gap-10">
+              <span className="font-bold w-40 text-sm">2. Payment method</span>
+              <div className="flex-1 text-[13px] flex items-center gap-2">
+                <CreditCard size={20} className="text-gray-500" />
+                <p className="font-bold">Pay on Delivery (Cash/Card)</p>
+              </div>
+              <button className="text-amazon-blue text-xs hover:underline h-fit">Change</button>
+            </div>
+
+            {/* Review Items */}
+            <div className="bg-white p-5 rounded border border-gray-300">
+               <h3 className="font-bold text-sm mb-4">3. Review items and delivery</h3>
+               <div className="space-y-4">
+                 {cart?.items?.map(item => (
+                   <div key={item.id} className="flex gap-4">
+                     <img src={item.product.imageUrl} className="w-16 h-16 object-contain" />
+                     <div className="text-[13px]">
+                        <p className="font-bold truncate max-w-[400px]">{item.product.name}</p>
+                        <p className="text-[#B12704] font-bold">₹{item.product.price}</p>
+                        <p className="text-gray-500">Quantity: {item.quantity}</p>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+            </div>
+          </div>
+
+          {/* Place Order Box */}
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded border border-gray-300">
+               <button 
+                  onClick={handlePlaceOrder}
+                  disabled={isPlacing || !cartCount}
+                  className="w-full py-2 bg-[#FFD814] hover:bg-[#F7CA00] border border-[#FCD200] rounded-[8px] text-xs font-medium shadow-sm transition-all disabled:opacity-50"
+               >
+                  {isPlacing ? 'Placing order...' : 'Place your order'}
+               </button>
+               <p className="text-[11px] text-gray-500 mt-2 text-center leading-tight">
+                 By placing your order, you agree to Amazon's privacy notice and conditions of use.
+               </p>
+               
+               <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="font-bold text-sm mb-2">Order Summary</h4>
+                  <div className="text-[12px] space-y-1">
+                    <div className="flex justify-between"><span>Items:</span><span>₹{cartTotal.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Delivery:</span><span>₹0.00</span></div>
+                    <div className="flex justify-between pt-2 mt-2 border-t border-gray-200 text-[#B12704] text-base font-bold">
+                      <span>Order Total:</span>
+                      <span>₹{cartTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+const OrdersPage = () => {
+    const { user } = useAuth();
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!user) {
+            navigate('/');
+        }
+    }, [user, navigate]);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const { getOrders } = await import('./api/orders');
+                const res = await getOrders();
+                setOrders(res.data);
+            } catch (err) {
+                console.error('Failed to fetch orders', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrders();
+    }, []);
+
+    return (
+        <div className="min-h-screen bg-[#EAEDED] font-sans pb-10">
+            <header className="bg-amazon-navy-900 text-white p-3 sticky top-0 z-50">
+                <div className="max-w-[1500px] mx-auto flex items-center justify-between">
+                    <Link to="/" className="text-xl font-bold">amazon<span className="text-amazon-orange text-[10px] italic">.in</span></Link>
+                    <div className="text-sm font-medium">Your Orders</div>
+                </div>
+            </header>
+
+            <main className="max-w-[800px] mx-auto p-4 md:p-8">
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                    <Link to="/" className="hover:text-amazon-orange hover:underline">Your Account</Link>
+                    <span>›</span>
+                    <span className="text-amazon-orange">Your Orders</span>
+                </div>
+                <h1 className="text-3xl font-normal mb-6">Your Orders</h1>
+
+                {loading ? (
+                    <div className="text-center py-10">
+                        <div className="animate-spin w-8 h-8 border-4 border-amazon-orange border-t-transparent rounded-full mx-auto"></div>
+                    </div>
+                ) : orders.length === 0 ? (
+                    <div className="bg-white p-8 rounded border border-gray-300 text-center">
+                        <p className="text-gray-600 mb-4">You have not placed any orders yet.</p>
+                        <Link to="/" className="text-amazon-blue hover:underline">Continue shopping</Link>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        {orders.map(order => (
+                            <div key={order.id} className="bg-white rounded border border-gray-300 overflow-hidden">
+                                <div className="bg-[#f0f2f2] p-4 flex flex-wrap gap-6 text-[12px] text-gray-500 border-b border-gray-300">
+                                    <div><p className="uppercase">Order Placed</p><p className="text-sm font-medium text-gray-700">{new Date(order.createdAt).toLocaleDateString()}</p></div>
+                                    <div><p className="uppercase">Total</p><p className="text-sm font-medium text-gray-700">₹{Number(order.totalAmount).toFixed(2)}</p></div>
+                                    <div><p className="uppercase">Ship To</p><p className="text-sm font-medium text-amazon-blue cursor-pointer hover:text-amazon-orange underline">{user?.firstName} {user?.lastName}</p></div>
+                                    <div className="ml-auto text-right">
+                                        <p className="uppercase">Order # {order.id.split('-')[0].toUpperCase()}</p>
+                                        <Link to={`#`} className="text-amazon-blue hover:text-amazon-orange underline">View order details</Link>
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="bg-green-700 w-2 h-2 rounded-full"></div>
+                                        <span className="font-bold text-sm">Delivered</span>
+                                    </div>
+                                    {order.orderItems.map(item => (
+                                        <div key={item.id} className="flex gap-4">
+                                            <img src={item.product.imageUrl} className="w-20 h-20 object-contain border border-gray-100 rounded" />
+                                            <div className="flex-1 text-[13px]">
+                                                <h4 className="text-amazon-blue font-medium hover:text-amazon-orange hover:underline cursor-pointer">{item.product.name}</h4>
+                                                <p className="text-gray-500 mt-1">Quantity: {item.quantity}</p>
+                                                <button className="mt-2 px-6 py-1 bg-[#FFD814] hover:bg-[#F7CA00] border border-[#FCD200] rounded-full text-xs shadow-sm">Buy it again</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
+
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/auth-success" element={<AuthSuccess />} />
-        </Routes>
-      </Router>
+      <CartProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/auth-success" element={<AuthSuccess />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+          </Routes>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   );
 }
