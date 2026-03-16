@@ -3,11 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle2, ArrowLeft, ShieldAlert, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useNotification } from '../context/NotificationContext';
 import AddressSelector from '../components/address/AddressSelector';
 
 const CheckoutPage = () => {
   const { user } = useAuth();
   const { cart, cartCount, cartTotal, clearCart } = useCart();
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [isPlacing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
@@ -23,7 +25,7 @@ const CheckoutPage = () => {
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
-      alert('Please select or add a delivery address');
+      showNotification('Please select or add a delivery address', 'warning');
       return;
     }
 
@@ -36,7 +38,7 @@ const CheckoutPage = () => {
       const selected = addrRes.data.find(a => a.id === selectedAddressId);
       
       if (!selected) {
-        alert('Selected address not found');
+        showNotification('Selected address not found', 'error');
         return;
       }
 
@@ -47,7 +49,7 @@ const CheckoutPage = () => {
       await clearCart();
       setTimeout(() => navigate('/orders'), 3000);
     } catch (err) {
-      alert('Failed to place order: ' + (err.response?.data?.message || 'Unknown error'));
+      showNotification('Failed to place order: ' + (err.response?.data?.message || 'Unknown error'), 'error');
     } finally {
       setPlacing(false);
     }

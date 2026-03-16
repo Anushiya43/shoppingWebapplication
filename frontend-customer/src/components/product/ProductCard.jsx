@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { useNotification } from '../../context/NotificationContext';
 
 const ProductCard = ({ product }) => {
   const { cart, addItem } = useCart();
   const { user } = useAuth();
+  const { showNotification } = useNotification();
+  const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
 
   const discountedPrice = product.discountPercentage
@@ -20,19 +24,18 @@ const ProductCard = ({ product }) => {
   const handleAddToCart = async (e) => {
     e.stopPropagation();
     if (!user) {
-      alert('Please sign in to add items to cart');
+      showNotification('Please sign in to add items to cart', 'info');
+      navigate('/login', { state: { from: window.location } });
       return;
     }
     setAdding(true);
     try {
       await addItem(product.id, 1);
+      showNotification('Item added to cart!', 'success');
     } catch (err) {
       console.error('Add to cart failed', err);
-      if (err.response?.data?.message) {
-        alert(err.response.data.message);
-      } else {
-        alert('Failed to add to cart. Please try again.');
-      }
+      const msg = err.response?.data?.message || 'Failed to add to cart. Please try again.';
+      showNotification(msg, 'error');
     } finally {
       setAdding(false);
     }

@@ -2,12 +2,14 @@ import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } 
 import { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 // Pages
 import HomePage from './pages/HomePage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
+import LoginPage from './pages/LoginPage';
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -32,17 +34,20 @@ const AuthSuccess = () => {
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/auth-success" element={<AuthSuccess />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-          </Routes>
-        </Router>
-      </CartProvider>
+      <NotificationProvider>
+        <CartProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/auth-success" element={<AuthSuccess />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+            </Routes>
+          </Router>
+        </CartProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

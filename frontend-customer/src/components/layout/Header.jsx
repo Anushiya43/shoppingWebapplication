@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, MapPin, Search, ShoppingCart, ChevronDown, Package } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
@@ -16,6 +16,7 @@ const Header = ({
 }) => {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-50 bg-primary-900 text-white shadow-lg">
@@ -90,13 +91,19 @@ const Header = ({
           </div>
 
           {/* Returns */}
-          <Link to="/orders" className="p-2 border border-transparent hover:border-white rounded cursor-pointer leading-tight flex items-center gap-2 min-w-[65px]">
+          <div 
+            onClick={() => {
+              if (user) navigate('/orders');
+              else navigate('/login', { state: { from: { pathname: '/orders' } } });
+            }}
+            className="p-2 border border-transparent hover:border-white rounded cursor-pointer leading-tight flex items-center gap-2 min-w-[65px]"
+          >
             <Package size={20} className="text-accent-cyan" />
             <div className="flex flex-col items-start">
               <div className="text-[10px] md:text-[11px] opacity-80 uppercase tracking-tighter">Returns</div>
               <div className="text-[11px] md:text-xs font-black">& Orders</div>
             </div>
-          </Link>
+          </div>
 
           {/* Cart */}
           <Link to="/cart" className="p-2 border border-transparent hover:border-white/20 rounded-md cursor-pointer flex items-center gap-1 relative transition-all">

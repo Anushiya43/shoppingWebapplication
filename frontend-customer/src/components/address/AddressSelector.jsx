@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '../../context/NotificationContext';
 import { Plus } from 'lucide-react';
 import AddressCard from './AddressCard';
 import AddressForm from './AddressForm';
 import { getAddresses, createAddress, deleteAddress } from '../../api/address';
 
 const AddressSelector = ({ onAddressSelect, selectedId }) => {
+  const { showNotification } = useNotification();
   const [addresses, setAddresses] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ const AddressSelector = ({ onAddressSelect, selectedId }) => {
       await fetchAddresses();
       onAddressSelect(res.data.id);
     } catch (err) {
-      alert('Failed to save address');
+      showNotification('Failed to save address', 'error');
     }
   };
 
@@ -44,7 +46,7 @@ const AddressSelector = ({ onAddressSelect, selectedId }) => {
         onAddressSelect(null);
       }
     } catch (err) {
-      alert('Failed to remove address');
+      showNotification('Failed to remove address', 'error');
     }
   };
 

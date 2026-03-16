@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNotification } from '../../context/NotificationContext';
 import { STATES, getDistricts } from '../../utils/geography';
 
 const AddressForm = ({ initialData, onSubmit, onCancel }) => {
+  const { showNotification } = useNotification();
   const [formData, setFormData] = useState(initialData || {
     fullName: '',
     phoneNumber: '',
@@ -43,7 +45,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel }) => {
     
     // Validate
     if (!formData.fullName || !formData.phoneNumber || !formData.street || !formData.city || !formData.zipCode) {
-      alert('Please fill in all required fields');
+      showNotification('Please fill in all required fields', 'warning');
       return;
     }
 
@@ -51,7 +53,7 @@ const AddressForm = ({ initialData, onSubmit, onCancel }) => {
     const finalDistrict = (isOtherState || isOtherDistrict) ? manualDistrict : formData.district;
 
     if (!finalState || !finalDistrict) {
-      alert('Please specify both State and District');
+      showNotification('Please specify both State and District', 'warning');
       return;
     }
 

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const OrdersPage = () => {
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -40,9 +42,9 @@ const OrdersPage = () => {
       const { getOrders } = await import('../api/orders');
       const res = await getOrders();
       setOrders(res.data);
-      alert('Order cancelled successfully');
+      showNotification('Order cancelled successfully', 'success');
     } catch (err) {
-      alert('Failed to cancel order: ' + (err.response?.data?.message || 'Unknown error'));
+      showNotification('Failed to cancel order: ' + (err.response?.data?.message || 'Unknown error'), 'error');
     }
   };
 

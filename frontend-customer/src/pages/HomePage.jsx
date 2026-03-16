@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, ShieldAlert, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
@@ -234,7 +235,7 @@ const HomePage = () => {
         onSearchChange={setSearchQuery}
         onSearch={handleSearch}
         onMobileMenuOpen={() => setMobileMenuOpen(true)}
-        onLoginClick={() => setLoginModalOpen(true)}
+        onLoginClick={() => navigate('/login')}
       />
 
       {/* Main Content */}
