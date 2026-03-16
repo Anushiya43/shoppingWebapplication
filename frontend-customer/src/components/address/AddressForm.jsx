@@ -30,6 +30,14 @@ const AddressForm = ({ initialData, onSubmit, onCancel }) => {
     }
   }, [formData.state]);
 
+  useEffect(() => {
+    if (formData.district === 'OTHER') {
+      setIsOtherDistrict(true);
+    } else if (formData.district && formData.district !== 'OTHER') {
+      setIsOtherDistrict(false);
+    }
+  }, [formData.district]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
