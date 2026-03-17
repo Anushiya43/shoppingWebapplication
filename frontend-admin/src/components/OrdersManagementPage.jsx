@@ -3,7 +3,8 @@ import { getAllOrders, updateOrderStatus } from '../api/orders';
 import { 
   Search, Filter, ChevronRight, Package, 
   Clock, Truck, CheckCircle, XCircle, 
-  Eye, MoreVertical, ExternalLink 
+  Eye, MoreVertical, ExternalLink, Download,
+  Calendar as CalendarIcon, RotateCcw
 } from 'lucide-react';
 
 const OrdersManagementPage = () => {
@@ -13,6 +14,8 @@ const OrdersManagementPage = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const fetchOrders = async () => {
         try {
@@ -70,8 +73,47 @@ const OrdersManagementPage = () => {
         
         const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
         
-        return matchesSearch && matchesStatus;
+        const orderDate = new Date(order.createdAt).setHours(0,0,0,0);
+        const start = startDate ? new Date(startDate).setHours(0,0,0,0) : null;
+        const end = endDate ? new Date(endDate).setHours(23,59,59,999) : null;
+        
+        const matchesDate = (!start || orderDate >= start) && (!end || orderDate <= end);
+        
+        return matchesSearch && matchesStatus && matchesDate;
     });
+
+    const exportToCSV = () => {
+        const headers = ['Order ID', 'Customer', 'Email', 'Total Amount', 'Status', 'Date', 'Shipping Address'];
+        const csvContent = [
+            headers.join(','),
+            ...filteredOrders.map(order => [
+                order.id,
+                `"${order.user.firstName} ${order.user.lastName}"`,
+                order.user.email,
+                order.totalAmount,
+                order.status,
+                new Date(order.createdAt).toLocaleDateString(),
+                `"${order.shippingAddress || 'N/A'}"`
+            ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `orders_report_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const resetFilters = () => {
+        setSearchTerm('');
+        setStatusFilter('ALL');
+        setStartDate('');
+        setEndDate('');
+    };
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-10 text-left">
@@ -82,34 +124,82 @@ const OrdersManagementPage = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
-                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                    <div className="relative w-full md:w-80 group text-left">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input 
-                            type="text"
-                            placeholder="Search ID, email, or name..."
-                            className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+            <div className="flex flex-col lg:flex-row gap-4 items-end justify-between mb-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Search Details</label>
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input 
+                                type="text"
+                                placeholder="ID, email, or name..."
+                                className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-semibold"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
-                    
-                    <div className="relative w-full md:w-56 text-left">
-                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                        <select 
-                            className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-semibold text-text-main appearance-none cursor-pointer"
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <option value="ALL">All Statuses</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="CONFIRMED">Confirmed</option>
-                            <option value="SHIPPED">Shipped</option>
-                            <option value="DELIVERED">Delivered</option>
-                            <option value="CANCELLED">Cancelled</option>
-                        </select>
+
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Status Filter</label>
+                        <div className="relative">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                            <select 
+                                className="w-full pl-11 pr-10 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-bold text-text-main appearance-none cursor-pointer"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="ALL">All Statuses</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="CONFIRMED">Confirmed</option>
+                                <option value="SHIPPED">Shipped</option>
+                                <option value="DELIVERED">Delivered</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
                     </div>
+
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">From Date</label>
+                        <div className="relative">
+                            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                            <input 
+                                type="date"
+                                className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold outline-none focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue transition-all"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">To Date</label>
+                        <div className="relative">
+                            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                            <input 
+                                type="date"
+                                className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold outline-none focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue transition-all"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-2 min-w-fit mt-4 lg:mt-0">
+                    <button 
+                        onClick={resetFilters}
+                        className="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all active:scale-95"
+                        title="Reset Filters"
+                    >
+                        <RotateCcw size={16} />
+                    </button>
+                    <button 
+                        onClick={exportToCSV}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-accent-blue text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                    >
+                        <Download size={14} /> Export Report
+                    </button>
                 </div>
             </div>
 
