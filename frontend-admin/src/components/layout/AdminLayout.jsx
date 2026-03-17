@@ -45,6 +45,7 @@ const AdminLayout = ({ children, user }) => {
             { label: 'Inventory', path: '/inventory', icon: Package },
             { label: 'Categories', path: '/categories', icon: LayoutGrid },
             { label: 'Orders', path: '/orders', icon: ShoppingCart },
+            { label: 'Users', path: '/users', icon: Users },
           ].map((item) => (
             <Link
               key={item.path}
@@ -61,9 +62,6 @@ const AdminLayout = ({ children, user }) => {
           ))}
           <div className="h-px bg-white/5 my-4"></div>
           <p className="px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Management</p>
-          <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-all flex items-center gap-3 text-slate-400 text-sm font-semibold hover:text-white group">
-            <Users size={18} className="group-hover:scale-105 transition-transform" /> Users
-          </Link>
           <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-all flex items-center gap-3 text-slate-400 text-sm font-semibold hover:text-white group">
             <BarChart3 size={18} className="group-hover:scale-105 transition-transform" /> Analytics
           </Link>

@@ -7,6 +7,7 @@ import LoginModal from './auth/LoginModal';
 import CategoriesPage from './CategoriesPage';
 import InventoryPage from './InventoryPage';
 import OrdersManagementPage from './OrdersManagementPage';
+import UserManagementPage from './UserManagementPage';
 import DashboardHome from './dashboard/DashboardHome';
 
 const Dashboard = () => {
@@ -129,6 +130,7 @@ const Dashboard = () => {
       {currentPath === '/categories' && <CategoriesPage />}
       {currentPath === '/inventory' && <InventoryPage />}
       {currentPath === '/orders' && <OrdersManagementPage />}
+      {currentPath === '/users' && <UserManagementPage />}
     </AdminLayout>
   );
 };
