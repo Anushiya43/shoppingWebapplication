@@ -1,19 +1,76 @@
-import React, { useState } from 'react';
-import { Package, BarChart3 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, BarChart3, AlertCircle } from 'lucide-react';
+import { getStats } from '../../api/analytics';
 
 const DashboardHome = () => {
-  const [stats] = useState([
-    { label: 'Total Revenue', value: '₹1,12,450', change: '+12%', icon: '💰', trend: 'up' },
-    { label: 'Active Orders', value: '48', change: '+5', icon: '📦', trend: 'up' },
-    { label: 'Total Users', value: '1,204', change: '+18', icon: '👥', trend: 'up' },
+  const [stats, setStats] = useState([
+    { label: 'Total Revenue', value: '₹0', change: '--', icon: '💰', trend: 'up' },
+    { label: 'Active Orders', value: '0', change: '--', icon: '📦', trend: 'up' },
+    { label: 'Total Users', value: '0', change: '--', icon: '👥', trend: 'up' },
   ]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(Array(12).fill(0));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await getStats();
+      const data = res.data;
+
+      setStats([
+        { 
+          label: 'Total Revenue', 
+          value: `₹${data.totalRevenue.toLocaleString()}`, 
+          change: 'Real-time', 
+          icon: '💰', 
+          trend: 'up' 
+        },
+        { 
+          label: 'Active Orders', 
+          value: data.activeOrders.toString(), 
+          change: 'Current', 
+          icon: '📦', 
+          trend: 'up' 
+        },
+        { 
+          label: 'Total Users', 
+          value: data.totalUsers.toLocaleString(), 
+          change: 'Verified', 
+          icon: '👥', 
+          trend: 'up' 
+        },
+      ]);
+      setMonthlyRevenue(data.monthlyRevenue);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch dashboard stats:', err);
+      setError('Failed to load real-time analytics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const maxRevenue = Math.max(...monthlyRevenue, 1);
 
   return (
     <div className="animate-in fade-in duration-500">
       {/* Stats Grid */}
+      {error && (
+        <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 animate-in slide-in-from-top-4">
+          <AlertCircle size={20} />
+          <p className="text-sm font-bold">{error}</p>
+          <button onClick={fetchDashboardData} className="ml-auto text-xs underline font-bold">Retry</button>
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {stats.map((stat, i) => (
-          <div key={i} className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+          <div key={i} className={`p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden ${loading ? 'animate-pulse' : ''}`}>
             <div className="flex justify-between items-start mb-4">
               <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
                 {stat.icon}
@@ -24,12 +81,14 @@ const DashboardHome = () => {
                 }`}>
                   {stat.change}
                 </span>
-                <span className="text-[10px] text-text-muted font-medium mt-1">vs last month</span>
+                <span className="text-[10px] text-text-muted font-medium mt-1">live data</span>
               </div>
             </div>
             <div>
               <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-bold text-text-main tracking-tight">{stat.value}</h3>
+              <h3 className="text-3xl font-bold text-text-main tracking-tight">
+                {loading ? <div className="h-8 bg-slate-100 rounded w-24"></div> : stat.value}
+              </h3>
             </div>
           </div>
         ))}
@@ -53,15 +112,15 @@ const DashboardHome = () => {
             </div>
           </div>
           <div className="h-64 flex items-end gap-3 px-2">
-            {[40, 70, 45, 90, 65, 80, 55, 75, 60, 85, 95, 70].map((h, i) => (
+            {monthlyRevenue.map((rev, i) => (
               <div key={i} className="flex-1 group/bar relative">
                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-text-main text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-10">
-                  ₹{(h * 1000).toLocaleString()}
+                  ₹{rev.toLocaleString()}
                 </div>
                 <div className="w-full bg-slate-50 rounded-t-lg h-60 flex flex-col justify-end overflow-hidden">
                   <div 
                     className="bg-accent-blue/10 w-full rounded-t-lg transition-all duration-700 group-hover/bar:bg-accent-blue/40" 
-                    style={{ height: `${h}%` }}
+                    style={{ height: `${(rev / maxRevenue) * 100}%` }}
                   ></div>
                 </div>
                 <div className="mt-3 text-[10px] font-bold text-text-muted text-center uppercase tracking-tighter">
