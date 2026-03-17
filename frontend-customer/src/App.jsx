@@ -10,6 +10,7 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import LoginPage from './pages/LoginPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -44,6 +45,7 @@ function App() {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
             </Routes>
           </Router>
         </CartProvider>

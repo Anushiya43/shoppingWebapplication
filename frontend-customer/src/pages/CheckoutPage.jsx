@@ -64,10 +64,9 @@ const CheckoutPage = () => {
 
       const formattedAddress = `${selected.fullName}, ${selected.phoneNumber}, ${selected.street}, ${selected.city}, ${selected.district}, ${selected.state} - ${selected.zipCode}, India`;
       
-      await createOrder({ shippingAddress: formattedAddress });
-      setPlaced(true);
+      const res = await createOrder({ shippingAddress: formattedAddress });
       await clearCart();
-      setTimeout(() => navigate('/orders'), 3000);
+      navigate(`/order-success/${res.data.id}`);
     } catch (err) {
       showNotification('Failed to place order: ' + (err.response?.data?.message || 'Unknown error'), 'error');
     } finally {
@@ -75,23 +74,6 @@ const CheckoutPage = () => {
     }
   };
 
-  if (placed) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 animate-fade-in text-center">
-        <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100 animate-bounce">
-          <CheckCircle2 size={48} className="text-green-500" />
-        </div>
-        <h1 className="text-4xl font-black text-primary-900 mb-3 tracking-tight">Order complete!</h1>
-        <p className="text-text-muted text-lg max-w-sm mb-8 font-medium">Thank you for choosing ModernShop. We're preparing your premium items for delivery.</p>
-        <button 
-          onClick={() => navigate('/orders')} 
-          className="px-8 py-3 bg-primary-900 hover:bg-primary-800 text-white rounded-2xl font-bold shadow-xl shadow-primary-900/10 transition-all active:scale-95"
-        >
-          View Your Orders
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-surface-bg font-sans pb-20">
