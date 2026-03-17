@@ -18,7 +18,27 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (!user) {
       navigate('/');
+      return;
     }
+
+    // Auto-select default address
+    const fetchAndSelectDefault = async () => {
+      try {
+        const { getAddresses } = await import('../api/address');
+        const res = await getAddresses();
+        const defaultAddr = res.data.find(a => a.isDefault);
+        if (defaultAddr) {
+          setSelectedAddressId(defaultAddr.id);
+        } else if (res.data.length > 0) {
+          // Fallback to first address if no default found
+          setSelectedAddressId(res.data[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to pre-select address', err);
+      }
+    };
+
+    fetchAndSelectDefault();
   }, [user, navigate]);
 
   if (!user) return null;

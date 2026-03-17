@@ -30,6 +30,7 @@ const InventoryPage = () => {
     const [filters, setFilters] = useState({ search: '', categoryId: '', page: 1 });
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [errors, setErrors] = useState({});
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -76,16 +77,29 @@ const InventoryPage = () => {
         }
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.name.trim()) newErrors.name = 'Product name is required';
+        if (!formData.description.trim()) newErrors.description = 'Description is required';
+        if (!formData.price || formData.price <= 0) newErrors.price = 'Valid price is required';
+        if (!formData.stock || formData.stock < 0) newErrors.stock = 'Valid stock amount is required';
+        if (!formData.categoryId) newErrors.categoryId = 'Category is required';
+        if (!currentProduct && !selectedFile) newErrors.image = 'Product image is required';
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!validateForm()) {
+            showNotification('error', 'Please fill all required fields correctly');
+            return;
+        }
+
         setSubmitting(true);
         try {
-            if (!currentProduct && !selectedFile) {
-                showNotification('error', 'Please upload a product image');
-                setSubmitting(false);
-                return;
-            }
-
             const data = new FormData();
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
             if (selectedFile) data.append('image', selectedFile);
@@ -101,7 +115,11 @@ const InventoryPage = () => {
             closeModal();
             fetchData();
         } catch (err) {
-            showNotification('error', err.response?.data?.message || 'Failed to save product');
+            const backendMessage = err.response?.data?.message;
+            const errorMessage = Array.isArray(backendMessage) 
+                ? backendMessage.join(', ') 
+                : (backendMessage || 'Failed to save product');
+            showNotification('error', errorMessage);
         } finally {
             setSubmitting(false);
         }
@@ -144,55 +162,59 @@ const InventoryPage = () => {
         }
         setSelectedFile(null);
         setIsModalOpen(true);
+        setErrors({});
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedFile(null);
         setPreviewUrl(null);
+        setErrors({});
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-10 text-left">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Inventory</h1>
-                    <p className="text-slate-500">Manage your products and stock levels.</p>
+                    <h1 className="text-2xl font-bold text-text-main tracking-tight">Inventory</h1>
+                    <p className="text-text-muted text-sm font-medium">Manage your product catalog and stock levels.</p>
                 </div>
                 <button
                     onClick={() => openModal()}
-                    className="flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-[1.25rem] font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-xl shadow-blue-100"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent-blue text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-accent-blue/20"
                 >
-                    <Plus size={20} /> Add Product
+                    <Plus size={18} /> Add Product
                 </button>
             </div>
 
             {/* Notification */}
             {notification && (
-                <div className={`fixed top-8 right-8 z-[150] p-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right-8 duration-300 ${notification.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                <div className={`fixed top-6 right-6 z-[300] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 border ${
+                    notification.type === 'success' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                        : 'bg-red-50 text-red-700 border-red-100'
                     }`}>
                     {notification.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                    <span className="font-bold">{notification.message}</span>
+                    <div className="text-sm font-semibold">{notification.message}</div>
                 </div>
             )}
 
             {/* Filters & Search */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
-                <div className="lg:col-span-2 relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+                <div className="relative w-full md:w-96 group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
                         type="search"
                         placeholder="Search products..."
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="relative">
-                    <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <div className="w-full md:w-48">
                     <select
-                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none font-medium text-slate-700"
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider text-text-main cursor-pointer focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none"
                         value={filters.categoryId}
                         onChange={(e) => setFilters({ ...filters, categoryId: e.target.value, page: 1 })}
                     >
@@ -204,95 +226,87 @@ const InventoryPage = () => {
                 </div>
             </div>
 
-            {/* Product Table */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto text-left">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-slate-50/50">
-                                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Product</th>
-                                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Category</th>
-                                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Price</th>
-                                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest">Stock</th>
-                                <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Product Details</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Category</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Price</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Stock</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 Array(5).fill(0).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td className="px-8 py-6 flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-slate-100 rounded-2xl"></div>
+                                        <td className="px-6 py-4 flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-slate-100 rounded-lg"></div>
                                             <div className="space-y-2">
-                                                <div className="h-4 bg-slate-100 rounded-full w-48"></div>
-                                                <div className="h-3 bg-slate-100 rounded-full w-32 text-xs"></div>
+                                                <div className="h-3 bg-slate-100 rounded-full w-32"></div>
+                                                <div className="h-2 bg-slate-100 rounded-full w-20"></div>
                                             </div>
                                         </td>
-                                        <td colSpan="4" className="px-8"><div className="h-4 bg-slate-50 rounded-full w-full"></div></td>
+                                        <td colSpan="4" className="px-6"><div className="h-4 bg-slate-50 rounded-full w-full"></div></td>
                                     </tr>
                                 ))
-                            ) : products.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-8 py-20 text-center">
-                                        <div className="flex flex-col items-center gap-4 text-slate-400">
-                                            <Package size={48} className="opacity-20" />
-                                            <p className="font-medium">No products found. Start by adding one!</p>
-                                        </div>
-                                    </td>
-                                </tr>
                             ) : products.map(prod => (
-                                <tr key={prod.id} className="hover:bg-slate-50/30 transition-colors group">
-                                    <td className="px-8 py-6">
+                                <tr key={prod.id} className="hover:bg-slate-50/50 transition-all border-b border-slate-100 last:border-0">
+                                    <td className="px-6 py-4">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-16 h-16 bg-slate-50 rounded-2xl overflow-hidden flex-shrink-0 border border-slate-100">
+                                            <div className="w-12 h-12 bg-slate-50 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 p-1">
                                                 {prod.imageUrl ? (
-                                                    <img src={prod.imageUrl} alt={prod.name} className="w-full h-full object-cover" />
+                                                    <img src={prod.imageUrl} alt={prod.name} className="w-full h-full object-contain" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                                        <ImageIcon size={24} />
+                                                        <ImageIcon size={20} />
                                                     </div>
                                                 )}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-slate-900 text-lg">{prod.name}</div>
-                                                <div className="text-slate-400 text-sm truncate max-w-[200px]">ID: {prod.id.slice(0, 8)}...</div>
+                                                <div className="font-bold text-text-main text-sm truncate max-w-[200px]">{prod.name}</div>
+                                                <div className="text-text-muted text-[10px] font-bold mt-1 uppercase tracking-tighter">SKU-{prod.id.slice(-6)}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="px-2.5 py-1 bg-slate-100 text-text-muted rounded-md text-[10px] font-bold uppercase tracking-wider border border-slate-200">
                                             {prod.category?.name || 'Uncategorized'}
                                         </span>
                                     </td>
-                                    <td className="px-8 py-6">
+                                    <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-slate-900">${prod.price}</span>
+                                            <span className="font-bold text-text-main text-sm">₹{prod.price}</span>
                                             {prod.discountPercentage > 0 && (
-                                                <span className="text-green-600 text-xs font-bold">-{prod.discountPercentage}% Off</span>
+                                                <span className="text-emerald-600 text-[10px] font-bold mt-0.5">-{prod.discountPercentage}% off</span>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${prod.stock > 10 ? 'bg-slate-100 text-slate-600' : 'bg-red-50 text-red-600'
+                                    <td className="px-6 py-4">
+                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${
+                                                prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
                                             }`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${prod.stock > 10 ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
                                             {prod.stock} in stock
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6 text-right">
+                                    <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => openModal(prod)}
-                                                className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:shadow-md rounded-xl transition-all active:scale-95"
+                                                className="p-2 text-slate-400 hover:text-accent-blue hover:bg-slate-100 rounded-lg transition-all"
                                                 title="Edit product"
                                             >
-                                                <Edit2 size={18} />
+                                                <Edit2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(prod.id)}
-                                                className="p-2.5 bg-red-50 text-red-500 hover:bg-red-100 hover:shadow-md rounded-xl transition-all active:scale-95"
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                                 title="Delete product"
                                             >
-                                                <Trash2 size={18} />
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
@@ -330,45 +344,45 @@ const InventoryPage = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
-                        <button
-                            onClick={closeModal}
-                            className="absolute top-8 right-8 p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 z-10"
-                        >
-                            <X size={24} />
-                        </button>
-
-                        <form onSubmit={handleSubmit} className="flex flex-col h-[90vh] md:h-auto overflow-y-auto">
-                            <div className="p-10 pb-0">
-                                <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white relative z-10">
+                            <div>
+                                <h2 className="text-xl font-bold text-text-main">
                                     {currentProduct ? 'Edit Product' : 'Add New Product'}
                                 </h2>
-                                <p className="text-slate-500">Fill in the details to list your product.</p>
+                                <p className="text-xs text-text-muted font-medium mt-0.5">Enter the product details below.</p>
                             </div>
+                            <button
+                                onClick={closeModal}
+                                className="p-2 hover:bg-slate-50 rounded-lg transition-all text-slate-400"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                            <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* Left Side: Image Upload */}
+                        <form onSubmit={handleSubmit} className="flex flex-col max-h-[85vh] overflow-y-auto bg-white">
+                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Image Upload */}
                                 <div className="space-y-4">
-                                    <label className="text-sm font-bold text-slate-700 ml-1">Product Media</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-text-muted">Product Image</label>
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="aspect-square bg-slate-50 rounded-[2.5rem] border-4 border-dashed border-slate-100 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100/50 hover:border-blue-100 transition-all relative group overflow-hidden"
+                                        className="aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-accent-blue transition-all relative group overflow-hidden"
                                     >
                                         {previewUrl ? (
                                             <>
-                                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <Upload className="text-white" size={32} />
+                                                <img src={previewUrl} alt="Preview" className="w-full h-full object-contain p-4" />
+                                                <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
+                                                    <Upload size={24} className="text-text-main" />
                                                 </div>
                                             </>
                                         ) : (
-                                            <div className="text-center p-6 text-slate-400 group-hover:text-blue-500 transition-colors">
-                                                <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:shadow-md transition-all">
-                                                    <Upload size={32} />
-                                                </div>
-                                                <p className="font-bold">Upload Image</p>
-                                                <p className="text-xs mt-1">PNG, JPG up to 10MB</p>
+                                            <div className="text-center p-6 text-slate-400 group-hover:text-accent-blue transition-colors">
+                                                <Upload size={32} className={`mx-auto mb-2 ${errors.image ? 'text-red-400' : 'opacity-50'}`} />
+                                                <p className={`text-[10px] font-bold uppercase tracking-wider ${errors.image ? 'text-red-500' : ''}`}>
+                                                    {errors.image || 'Click to upload'}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
@@ -381,96 +395,103 @@ const InventoryPage = () => {
                                     />
                                 </div>
 
-                                {/* Right Side: Details */}
+                                {/* Details */}
                                 <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">Product Name</label>
-                                        <div className="relative">
-                                            <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="text" required placeholder="iPhone 15 Pro, Smart Watch..."
-                                                className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            />
-                                        </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-muted ml-0.5">Product Name</label>
+                                        <input
+                                            type="text" placeholder="e.g. Premium Watch"
+                                            className={`w-full px-4 py-2.5 bg-white border ${errors.name ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium`}
+                                            value={formData.name}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, name: e.target.value });
+                                                if (errors.name) setErrors({ ...errors, name: null });
+                                            }}
+                                        />
+                                        {errors.name && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.name}</p>}
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">Category</label>
-                                        <div className="relative">
-                                            <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <select
-                                                className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none font-medium"
-                                                required
-                                                value={formData.categoryId}
-                                                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                                            >
-                                                <option value="" disabled>Select category</option>
-                                                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                                            </select>
-                                        </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-muted ml-0.5">Category</label>
+                                        <select
+                                            className={`w-full px-4 py-2.5 bg-white border ${errors.categoryId ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium cursor-pointer`}
+                                            value={formData.categoryId}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, categoryId: e.target.value });
+                                                if (errors.categoryId) setErrors({ ...errors, categoryId: null });
+                                            }}
+                                        >
+                                            <option value="" disabled>Select a category</option>
+                                            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                        </select>
+                                        {errors.categoryId && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.categoryId}</p>}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 ml-1">Price (₹)</label>
-                                            <div className="relative">
-                                                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                                <input
-                                                    type="number" step="1" required placeholder="500"
-                                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
-                                                    value={formData.price}
-                                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                />
-                                            </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-text-muted ml-0.5">Price (₹)</label>
+                                            <input
+                                                type="number" step="1" placeholder="0"
+                                                className={`w-full px-4 py-2.5 bg-white border ${errors.price ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-bold`}
+                                                value={formData.price}
+                                                onChange={(e) => {
+                                                    setFormData({ ...formData, price: e.target.value });
+                                                    if (errors.price) setErrors({ ...errors, price: null });
+                                                }}
+                                            />
+                                            {errors.price && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.price}</p>}
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 ml-1">Stock</label>
-                                            <div className="relative">
-                                                <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                                <input
-                                                    type="number" required placeholder="100"
-                                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
-                                                    value={formData.stock}
-                                                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                                />
-                                            </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-text-muted ml-0.5">Stock</label>
+                                            <input
+                                                type="number" placeholder="0"
+                                                className={`w-full px-4 py-2.5 bg-white border ${errors.stock ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-bold`}
+                                                value={formData.stock}
+                                                onChange={(e) => {
+                                                    setFormData({ ...formData, stock: e.target.value });
+                                                    if (errors.stock) setErrors({ ...errors, stock: null });
+                                                }}
+                                            />
+                                            {errors.stock && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.stock}</p>}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">Discount (%)</label>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-muted ml-0.5">Discount (%)</label>
                                         <input
-                                            type="number" placeholder="5, 10, 20..."
-                                            className="w-full px-5 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                                            type="number" placeholder="0"
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-bold"
                                             value={formData.discountPercentage}
                                             onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 ml-1">Description</label>
+                                <div className="md:col-span-2 space-y-1.5">
+                                    <label className="text-xs font-bold text-text-muted ml-0.5">Product Description</label>
                                     <textarea
-                                        rows="2" required placeholder="Enter product details..."
-                                        className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 font-medium resize-none"
+                                        rows="3" placeholder="Enter broad description of the product..."
+                                        className={`w-full px-4 py-3 bg-white border ${errors.description ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium leading-relaxed`}
                                         value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, description: e.target.value });
+                                            if (errors.description) setErrors({ ...errors, description: null });
+                                        }}
                                     />
+                                    {errors.description && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.description}</p>}
                                 </div>
                             </div>
 
-                            <div className="p-10 pt-0 flex gap-4">
+                            <div className="px-8 py-6 border-t border-slate-100 flex gap-4 bg-slate-50/50">
                                 <button
                                     type="button" onClick={closeModal}
-                                    className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold hover:bg-slate-100 transition-all active:scale-95"
+                                    className="px-6 py-2.5 bg-white border border-slate-200 text-text-muted rounded-lg font-bold text-xs hover:bg-slate-50 transition-all active:scale-95"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit" disabled={submitting}
-                                    className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-xl shadow-blue-100 disabled:opacity-50"
+                                    className="flex-1 py-2.5 bg-accent-blue text-white rounded-lg font-bold text-xs hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-accent-blue/20 disabled:opacity-50"
                                 >
                                     {submitting ? 'Processing...' : (currentProduct ? 'Save Changes' : 'Create Product')}
                                 </button>

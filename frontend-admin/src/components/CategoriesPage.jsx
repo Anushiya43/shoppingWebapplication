@@ -11,12 +11,14 @@ const CategoriesPage = () => {
     const [submitting, setSubmitting] = useState(false);
     const [notification, setNotification] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         fetchCategories();
     }, []);
 
     const fetchCategories = async () => {
+        setLoading(true);
         try {
             const res = await getCategories();
             setCategories(res.data);
@@ -32,8 +34,23 @@ const CategoriesPage = () => {
         setTimeout(() => setNotification(null), 3000);
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.name.trim()) newErrors.name = 'Category name is required';
+        if (!formData.description.trim()) newErrors.description = 'Description is required';
+        
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!validateForm()) {
+            showNotification('error', 'Please fill all required fields');
+            return;
+        }
+
         setSubmitting(true);
         try {
             if (currentCategory) {
@@ -46,9 +63,14 @@ const CategoriesPage = () => {
             setIsModalOpen(false);
             setCurrentCategory(null);
             setFormData({ name: '', description: '' });
+            setErrors({});
             fetchCategories();
         } catch (err) {
-            showNotification('error', err.response?.data?.message || 'Failed to save category');
+            const backendMessage = err.response?.data?.message;
+            const errorMessage = Array.isArray(backendMessage) 
+                ? backendMessage.join(', ') 
+                : (backendMessage || 'Failed to save category');
+            showNotification('error', errorMessage);
         } finally {
             setSubmitting(false);
         }
@@ -69,6 +91,7 @@ const CategoriesPage = () => {
         setCurrentCategory(cat);
         setFormData({ name: cat.name, description: cat.description });
         setIsModalOpen(true);
+        setErrors({});
     };
 
     const filteredCategories = categories.filter(c => 
@@ -76,100 +99,106 @@ const CategoriesPage = () => {
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-10 text-left">
             {/* Header section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Categories</h1>
-                    <p className="text-slate-500">Organize your products into logical groups.</p>
+                    <h1 className="text-2xl font-bold text-text-main tracking-tight">Categories</h1>
+                    <p className="text-text-muted text-sm font-medium">Organize your products into logical groups.</p>
                 </div>
                 <button 
                     onClick={() => {
                         setCurrentCategory(null);
                         setFormData({ name: '', description: '' });
                         setIsModalOpen(true);
+                        setErrors({});
                     }}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-200"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent-blue text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-accent-blue/20"
                 >
-                    <FolderPlus size={20} /> Add Category
+                    <FolderPlus size={18} /> Add Category
                 </button>
             </div>
 
             {/* Notification */}
             {notification && (
-                <div className={`fixed top-8 right-8 z-[100] p-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right-8 duration-300 ${
-                    notification.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                }`}>
+                <div className={`fixed top-6 right-6 z-[300] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 border ${
+                    notification.type === 'success' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                        : 'bg-red-50 text-red-700 border-red-100'
+                    }`}>
                     {notification.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                    <span className="font-bold">{notification.message}</span>
+                    <div className="text-sm font-semibold">{notification.message}</div>
                 </div>
             )}
 
-            {/* Main Content */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-8 border-b border-slate-50 flex items-center gap-4">
-                    <div className="relative flex-1 group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
-                        <input 
-                            type="text" 
-                            placeholder="Search categories..."
-                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+            {/* Content Strip */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+                <div className="relative w-full md:w-96 group text-left">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                        type="text" 
+                        placeholder="Search categories..."
+                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
+            </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto text-left">
+                    <table className="w-full">
                         <thead>
-                            <tr className="bg-slate-50/50">
-                                <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Category Name</th>
-                                <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Description</th>
-                                <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">Products</th>
-                                <th className="px-8 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Category Name</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Description</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-center">Products</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 Array(3).fill(0).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td className="px-8 py-6"><div className="h-4 bg-slate-100 rounded-full w-32"></div></td>
-                                        <td className="px-8 py-6"><div className="h-4 bg-slate-100 rounded-full w-64"></div></td>
-                                        <td className="px-8 py-6"><div className="h-4 bg-slate-100 rounded-full w-8 mx-auto"></div></td>
-                                        <td className="px-8 py-6 text-right"><div className="h-8 bg-slate-100 rounded-lg w-20 ml-auto"></div></td>
+                                        <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded-full w-32"></div></td>
+                                        <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded-full w-64"></div></td>
+                                        <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded-full w-8 mx-auto"></div></td>
+                                        <td className="px-6 py-4 text-right"><div className="h-8 bg-slate-100 rounded-lg w-16 ml-auto"></div></td>
                                     </tr>
                                 ))
                             ) : filteredCategories.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-8 py-12 text-center text-slate-400 font-medium">No categories found matching your search.</td>
+                                    <td colSpan="4" className="px-8 py-12 text-center text-slate-400 font-medium text-sm">No categories found matching your search.</td>
                                 </tr>
                             ) : filteredCategories.map((cat) => (
-                                <tr key={cat.id} className="hover:bg-slate-50/30 transition-colors group">
-                                    <td className="px-8 py-6">
-                                        <div className="font-bold text-slate-900 text-lg">{cat.name}</div>
+                                <tr key={cat.id} className="hover:bg-slate-50/50 transition-all border-b border-slate-100 last:border-0">
+                                    <td className="px-6 py-4">
+                                        <div className="font-bold text-text-main text-sm">{cat.name}</div>
+                                        <div className="text-[10px] font-bold text-text-muted uppercase tracking-tighter mt-1">ID: {cat.id.slice(-8)}</div>
                                     </td>
-                                    <td className="px-8 py-6 max-w-md">
-                                        <div className="text-slate-500 truncate">{cat.description}</div>
+                                    <td className="px-6 py-4 max-w-md">
+                                        <p className="text-text-muted text-xs line-clamp-1 font-medium">{cat.description}</p>
                                     </td>
-                                    <td className="px-8 py-6 text-center">
-                                        <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">
-                                            {cat._count?.products || 0}
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-text-muted border border-slate-200">
+                                            {cat._count?.products || 0} items
                                         </span>
                                     </td>
-                                    <td className="px-8 py-6 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
                                             <button 
                                                 onClick={() => openEdit(cat)}
-                                                className="p-2 hover:bg-white hover:text-blue-600 hover:shadow-md rounded-xl transition-all text-slate-400"
+                                                className="p-2 text-slate-400 hover:text-accent-blue hover:bg-slate-100 rounded-lg transition-all"
+                                                title="Edit category"
                                             >
-                                                <Edit2 size={18} />
+                                                <Edit2 size={16} />
                                             </button>
                                             <button 
                                                 onClick={() => handleDelete(cat.id)}
-                                                className="p-2 hover:bg-white hover:text-red-600 hover:shadow-md rounded-xl transition-all text-slate-400"
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Delete category"
                                             >
-                                                <Trash2 size={18} />
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>
@@ -182,60 +211,70 @@ const CategoriesPage = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
-                        <button 
-                            onClick={() => setIsModalOpen(false)} 
-                            className="absolute top-6 right-6 p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400"
-                        >
-                            <X size={20} />
-                        </button>
-
-                        <form onSubmit={handleSubmit} className="p-10 space-y-6">
-                            <div className="text-center mb-4">
-                                <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                                    {currentCategory ? 'Edit Category' : 'New Category'}
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-bold text-text-main">
+                                    {currentCategory ? 'Edit Category' : 'Create Category'}
                                 </h2>
-                                <p className="text-slate-500">Provide details for your category group.</p>
+                                <p className="text-xs text-text-muted font-medium mt-0.5">Define category properties below.</p>
                             </div>
+                            <button 
+                                onClick={() => {
+                                    setIsModalOpen(false);
+                                    setErrors({});
+                                }} 
+                                className="p-2 hover:bg-slate-50 rounded-lg transition-all text-slate-400"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                            <div className="space-y-4 text-left">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 ml-1">Category Name</label>
+                        <form onSubmit={handleSubmit} className="p-8 space-y-6 bg-white text-left">
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-text-muted ml-0.5">Category Name</label>
                                     <input 
                                         type="text" 
-                                        required
-                                        placeholder="Mobile Phones, Accessories..."
-                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                                        placeholder="e.g. Electronics"
+                                        className={`w-full px-4 py-2.5 bg-white border ${errors.name ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium`}
                                         value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, name: e.target.value });
+                                            if (errors.name) setErrors({ ...errors, name: null });
+                                        }}
                                     />
+                                    {errors.name && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.name}</p>}
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 ml-1">Description</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-text-muted ml-0.5">Description</label>
                                     <textarea 
-                                        rows="3"
-                                        required
-                                        placeholder="Add a brief description..."
-                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none font-medium resize-none"
+                                        rows="4"
+                                        placeholder="Describe what kind of products belong here..."
+                                        className={`w-full px-4 py-3 bg-white border ${errors.description ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium leading-relaxed resize-none`}
                                         value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, description: e.target.value });
+                                            if (errors.description) setErrors({ ...errors, description: null });
+                                        }}
                                     />
+                                    {errors.description && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.description}</p>}
                                 </div>
                             </div>
 
-                            <div className="flex gap-4 pt-4">
+                            <div className="flex gap-4 pt-2">
                                 <button 
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-4 bg-slate-50 text-slate-600 rounded-2xl font-bold hover:bg-slate-100 transition-all active:scale-95"
+                                    className="flex-1 py-2.5 bg-white border border-slate-200 text-text-muted rounded-lg font-bold text-xs hover:bg-slate-50 transition-all active:scale-95"
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit"
                                     disabled={submitting}
-                                    className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-200 disabled:opacity-50"
+                                    className="flex-[2] py-2.5 bg-accent-blue text-white rounded-lg font-bold text-xs hover:bg-blue-700 transition-all active:scale-95 shadow-sm shadow-accent-blue/20 disabled:opacity-50"
                                 >
                                     {submitting ? 'Saving...' : (currentCategory ? 'Update Category' : 'Create Category')}
                                 </button>

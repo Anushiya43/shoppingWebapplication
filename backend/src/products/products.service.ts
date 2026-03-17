@@ -79,15 +79,26 @@ export class ProductsService {
     try {
       return await this.prisma.product.update({
         where: { id },
-        data,
+        data: {
+          ...data,
+          price: data.price !== undefined ? Number(data.price) : undefined,
+          stock: data.stock !== undefined ? Number(data.stock) : undefined,
+          discountPercentage: data.discountPercentage !== undefined ? Number(data.discountPercentage) : undefined,
+        },
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new ConflictException('A product with this name already exists');
         }
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Product not found');
+        }
       }
-      throw new NotFoundException('Product not found');
+      if (error instanceof Error && error.name === 'PrismaClientValidationError') {
+        throw new ConflictException('Validation failed. Please check if all fields are correct.');
+      }
+      throw error;
     }
   }
 

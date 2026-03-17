@@ -80,7 +80,13 @@ const CartPage = () => {
                           )}
                         </div>
                       </div>
-                      <div className="text-xs font-bold px-2 py-0.5 bg-green-50 text-green-600 rounded-lg w-fit mb-4">Secure in Stock</div>
+                      {item.product.stock <= 0 ? (
+                        <div className="text-[10px] font-black uppercase tracking-tighter px-2.5 py-1 bg-red-50 text-red-600 rounded-lg w-fit mb-4 border border-red-100/50">Out of Stock</div>
+                      ) : item.product.stock <= 5 ? (
+                        <div className="text-[10px] font-black uppercase tracking-tighter px-2.5 py-1 bg-amber-50 text-amber-600 rounded-lg w-fit mb-4 border border-amber-100/50 animate-pulse">Only {item.product.stock} left - order soon</div>
+                      ) : (
+                        <div className="text-[10px] font-black uppercase tracking-tighter px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-lg w-fit mb-4 border border-emerald-100/50">Secure in Stock</div>
+                      )}
 
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center bg-gray-50 rounded-2xl p-1 gap-1 border border-gray-100 shadow-inner">
