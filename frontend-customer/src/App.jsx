@@ -14,6 +14,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import OrderTrackingPage from './pages/OrderTrackingPage';
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -66,6 +67,7 @@ function App() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
+          <Route path="/orders/:id/track" element={<OrderTrackingPage />} />
         </Routes>
       </Router>
     </NotificationProvider>

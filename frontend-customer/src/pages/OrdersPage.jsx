@@ -158,7 +158,10 @@ const OrdersPage = () => {
                             <button className="px-6 py-2.5 bg-primary-900 hover:bg-primary-800 text-white rounded-2xl text-[13px] font-black shadow-lg shadow-primary-900/10 transition-all active:scale-95">
                               Order Again
                             </button>
-                            <button className="px-6 py-2.5 bg-white hover:bg-gray-50 text-primary-900 border border-gray-100 rounded-2xl text-[13px] font-black transition-all active:scale-95">
+                            <button 
+                              onClick={() => navigate(`/orders/${order.id}/track`)}
+                              className="px-6 py-2.5 bg-white hover:bg-gray-50 text-primary-900 border border-gray-100 rounded-2xl text-[13px] font-black transition-all active:scale-90"
+                            >
                               Track Item
                             </button>
                           </div>
