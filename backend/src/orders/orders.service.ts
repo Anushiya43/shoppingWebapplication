@@ -3,12 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus, Prisma } from '@prisma/client';
+import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private cartService: CartService,
+    private couponsService: CouponsService,
   ) {}
 
   async createOrder(userId: string, createOrderDto: CreateOrderDto): Promise<Order> {
@@ -51,17 +53,32 @@ export class OrdersService {
 
     // Handle Coupon
     let discountAmount = 0;
-    if (createOrderDto.couponId) {
-      const coupon = await this.prisma.coupon.findUnique({
-        where: { id: createOrderDto.couponId },
-      });
+    let validatedCoupon: any = null;
 
-      if (coupon && new Date() < coupon.expiryDate && totalAmount >= Number(coupon.minAmount)) {
-        if (coupon.type === 'PERCENTAGE') {
-          discountAmount = totalAmount * (Number(coupon.value) / 100);
-        } else {
-          discountAmount = Number(coupon.value);
-        }
+    if (createOrderDto.couponId) {
+      validatedCoupon = await this.couponsService.findOne(createOrderDto.couponId);
+      
+      if (!validatedCoupon) {
+        throw new BadRequestException('Invalid coupon code');
+      }
+
+      // Additional validation logic via service
+      if (new Date() > validatedCoupon.expiryDate) {
+        throw new BadRequestException('Coupon has expired');
+      }
+      if (totalAmount < Number(validatedCoupon.minAmount)) {
+        throw new BadRequestException(`Minimum purchase amount of ₹${validatedCoupon.minAmount} required`);
+      }
+      
+      const untypedCoupon = validatedCoupon as any;
+      if (untypedCoupon.usageLimit !== null && untypedCoupon.usedCount >= untypedCoupon.usageLimit) {
+        throw new BadRequestException('Coupon usage limit reached');
+      }
+
+      if (validatedCoupon.type === 'PERCENTAGE') {
+        discountAmount = totalAmount * (Number(validatedCoupon.value) / 100);
+      } else {
+        discountAmount = Number(validatedCoupon.value);
       }
     }
 
@@ -84,6 +101,16 @@ export class OrdersService {
           orderItems: true,
         },
       });
+
+      // Increment Coupon usage if applied
+      if (createOrderDto.couponId) {
+        await (tx.coupon as any).update({
+          where: { id: createOrderDto.couponId },
+          data: {
+            usedCount: { increment: 1 },
+          },
+        });
+      }
 
       // Update stock
       for (const item of orderItemsData) {
