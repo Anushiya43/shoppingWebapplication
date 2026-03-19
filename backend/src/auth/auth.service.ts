@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { User, Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,13 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
-  async validateUser(details: { email: string; firstName: string; lastName: string; googleId: string; role?: 'ADMIN' | 'CUSTOMER' }) {
+  async validateUser(details: { 
+    email: string; 
+    firstName: string; 
+    lastName: string; 
+    googleId: string; 
+    role?: Role 
+  }): Promise<User> {
     let user = await this.prisma.user.findUnique({
       where: { email: details.email },
     });
@@ -47,7 +54,7 @@ export class AuthService {
     return user;
   }
 
-  async generateTokens(user: any) {
+  async generateTokens(user: User) {
     const payload = { 
         sub: user.id, 
         email: user.email, 
@@ -59,7 +66,7 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_SECRET,
-        expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any,
+        expiresIn: (process.env.JWT_EXPIRES_IN || '1h') as any,
       }),
       this.jwtService.signAsync(payload, {
         secret: process.env.REFRESH_TOKEN_SECRET,
@@ -82,7 +89,7 @@ export class AuthService {
     };
   }
 
-  async updateRefreshToken(userId: string, refreshToken: string) {
+  async updateRefreshToken(userId: string, refreshToken: string): Promise<void> {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.prisma.user.update({
       where: { id: userId },
@@ -104,11 +111,10 @@ export class AuthService {
         throw new UnauthorizedException('Access Denied');
     }
 
-    const tokens = await this.generateTokens(user);
-    return tokens;
+    return this.generateTokens(user);
   }
 
-  async logout(userId: string) {
+  async logout(userId: string): Promise<void> {
     await this.prisma.user.updateMany({
       where: {
         id: userId,

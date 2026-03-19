@@ -3,318 +3,417 @@ import { getAllOrders, updateOrderStatus } from '../api/orders';
 import { 
   Search, Filter, ChevronRight, Package, 
   Clock, Truck, CheckCircle, XCircle, 
-  Eye, MoreVertical, ExternalLink 
+  Eye, MoreVertical, ExternalLink, Download,
+  Calendar as CalendarIcon, RotateCcw
 } from 'lucide-react';
 
 const OrdersManagementPage = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const res = await getAllOrders();
-      setOrders(res.data);
-    } catch (err) {
-      console.error('Failed to fetch orders:', err);
-      setError('Failed to load orders. Please check if the backend is running.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
+            const res = await getAllOrders();
+            setOrders(res.data);
+        } catch (err) {
+            console.error('Failed to fetch orders:', err);
+            setError('Failed to load orders. Please check if the backend is running.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+    useEffect(() => {
+        fetchOrders();
+    }, []);
 
-  const handleStatusChange = async (orderId, newStatus, trackingNumber) => {
-    try {
-      const updateData = { status: newStatus };
-      if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;
-      
-      await updateOrderStatus(orderId, updateData);
-      
-      // Update local state to reflect change immediately
-      setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, ...updateData } : order
-      ));
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, ...updateData });
-      }
-    } catch (err) {
-      console.error('Failed to update status:', err);
-      alert('Failed to update order status');
-    }
-  };
+    const handleStatusChange = async (orderId, newStatus, trackingNumber) => {
+        try {
+            const updateData = { status: newStatus };
+            if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;
+            
+            await updateOrderStatus(orderId, updateData);
+            
+            // Update local state to reflect change immediately
+            setOrders(orders.map(order => 
+                order.id === orderId ? { ...order, ...updateData } : order
+            ));
+            if (selectedOrder && selectedOrder.id === orderId) {
+                setSelectedOrder({ ...selectedOrder, ...updateData });
+            }
+        } catch (err) {
+            console.error('Failed to update status:', err);
+            alert('Failed to update order status');
+        }
+    };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'PENDING': return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'CONFIRMED': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'SHIPPED': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-      case 'DELIVERED': return 'bg-green-100 text-green-700 border-green-200';
-      case 'CANCELLED': return 'bg-red-100 text-red-700 border-red-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'PENDING': return 'bg-amber-50 text-amber-600 border-amber-100';
+            case 'CONFIRMED': return 'bg-blue-50 text-blue-600 border-blue-100';
+            case 'SHIPPED': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+            case 'DELIVERED': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            case 'CANCELLED': return 'bg-red-50 text-red-600 border-red-100';
+            default: return 'bg-slate-50 text-slate-600 border-slate-100';
+        }
+    };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'PENDING': return <Clock size={14} />;
-      case 'CONFIRMED': return <CheckCircle size={14} />;
-      case 'SHIPPED': return <Truck size={14} />;
-      case 'DELIVERED': return <CheckCircle size={14} />;
-      case 'CANCELLED': return <XCircle size={14} />;
-      default: return null;
-    }
-  };
-
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${order.user.firstName} ${order.user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900">Order Management</h2>
-          <p className="text-slate-500">Monitor and update customer orders across the platform.</p>
-        </div>
+    const filteredOrders = orders.filter(order => {
+        const matchesSearch = 
+            order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            order.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            `${order.user.firstName} ${order.user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
         
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text"
-              placeholder="Search by ID or customer..."
-              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 w-64 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <select 
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="SHIPPED">Shipped</option>
-            <option value="DELIVERED">Delivered</option>
-            <option value="CANCELLED">Cancelled</option>
-          </select>
-        </div>
-      </div>
+        const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
+        
+        const orderDate = new Date(order.createdAt).setHours(0,0,0,0);
+        const start = startDate ? new Date(startDate).setHours(0,0,0,0) : null;
+        const end = endDate ? new Date(endDate).setHours(23,59,59,999) : null;
+        
+        const matchesDate = (!start || orderDate >= start) && (!end || orderDate <= end);
+        
+        return matchesSearch && matchesStatus && matchesDate;
+    });
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
-        </div>
-      ) : error ? (
-        <div className="p-8 bg-red-50 text-red-600 rounded-3xl text-center border border-red-100">
-          <XCircle size={40} className="mx-auto mb-4 opacity-50" />
-          <p className="font-bold">{error}</p>
-          <button onClick={fetchOrders} className="mt-4 text-sm font-bold underline">Try Again</button>
-        </div>
-      ) : (
-        <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Order ID</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Customer</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Total Amount</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Date</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-slate-400">
-                      No orders found matching your criteria.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <span className="font-mono text-xs font-bold text-blue-600">#{order.id.split('-')[0].toUpperCase()}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-900">{order.user.firstName} {order.user.lastName}</span>
-                          <span className="text-xs text-slate-500">{order.user.email}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-bold text-slate-900">₹{parseFloat(order.totalAmount).toLocaleString()}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
-                          {getStatusIcon(order.status)}
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-slate-600">{new Date(order.createdAt).toLocaleDateString()}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={() => setSelectedOrder(order)}
-                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                            title="View Details"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <div className="relative group/menu">
-                            <button 
-                              className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
-                            >
-                              <MoreVertical size={18} />
-                            </button>
-                            <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-100 rounded-xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden">
-                              {['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map(status => (
-                                <button
-                                  key={status}
-                                  onClick={() => handleStatusChange(order.id, status)}
-                                  className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-slate-50 transition-colors ${order.status === status ? 'text-blue-600 bg-blue-50' : 'text-slate-600'}`}
-                                >
-                                  Mark as {status}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+    const exportToCSV = () => {
+        const headers = ['Order ID', 'Customer', 'Email', 'Total Amount', 'Status', 'Date', 'Shipping Address'];
+        const csvContent = [
+            headers.join(','),
+            ...filteredOrders.map(order => [
+                order.id,
+                `"${order.user.firstName} ${order.user.lastName}"`,
+                order.user.email,
+                order.totalAmount,
+                order.status,
+                new Date(order.createdAt).toLocaleDateString(),
+                `"${order.shippingAddress || 'N/A'}"`
+            ].join(','))
+        ].join('\n');
 
-      {/* Order Details Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
-            <button 
-              onClick={() => setSelectedOrder(null)} 
-              className="absolute top-6 right-6 p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 z-10"
-            >
-              <XCircle size={24} />
-            </button>
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `orders_report_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
-            <div className="p-10">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
-                  <Package className="text-blue-600" size={32} />
-                </div>
+    const resetFilters = () => {
+        setSearchTerm('');
+        setStatusFilter('ALL');
+        setStartDate('');
+        setEndDate('');
+    };
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500 pb-10 text-left">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-900">Order Details</h3>
-                  <p className="text-slate-500">Order ID: <span className="font-mono font-bold text-blue-600 uppercase">#{selectedOrder.id}</span></p>
+                    <h1 className="text-2xl font-bold text-text-main tracking-tight">Order Management</h1>
+                    <p className="text-text-muted text-sm font-medium">Monitor and process customer transactions.</p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Customer Info</h4>
-                  <p className="font-bold text-slate-900">{selectedOrder.user.firstName} {selectedOrder.user.lastName}</p>
-                  <p className="text-sm text-slate-500">{selectedOrder.user.email}</p>
-                  <p className="text-xs text-slate-400 mt-2 uppercase font-bold">Shipping Address</p>
-                  <p className="text-sm text-slate-700">{selectedOrder.shippingAddress || 'N/A'}</p>
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Order Management</h4>
-                  <div className="flex flex-col gap-3">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border w-fit ${getStatusColor(selectedOrder.status)}`}>
-                        {getStatusIcon(selectedOrder.status)}
-                        {selectedOrder.status}
-                    </span>
-                    
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Tracking Number</label>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text"
-                          placeholder="Enter tracking ID..."
-                          className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
-                          defaultValue={selectedOrder.trackingNumber || ''}
-                          id="tracking-input"
-                        />
-                        <button 
-                          onClick={() => {
-                            const val = document.getElementById('tracking-input').value;
-                            handleStatusChange(selectedOrder.id, selectedOrder.status, val);
-                          }}
-                          className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-bold rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          Update
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-100 pt-8 mb-8 overflow-y-auto max-h-60 pr-2 custom-scrollbar">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Items Summary</h4>
-                <div className="space-y-4">
-                  {selectedOrder.orderItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0">
-                        <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-contain" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-slate-900 truncate">{item.product.name}</p>
-                        <p className="text-xs text-slate-500">Qty: {item.quantity} × ₹{parseFloat(item.price).toLocaleString()}</p>
-                      </div>
-                      <div className="text-sm font-bold text-slate-900 whitespace-nowrap">
-                        ₹{(item.quantity * parseFloat(item.price)).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-500 font-medium">Total Amount to Pay</p>
-                  <p className="text-2xl font-black text-slate-900">₹{parseFloat(selectedOrder.totalAmount).toLocaleString()}</p>
-                </div>
-                <div className="flex gap-2">
-                   <button 
-                     onClick={() => window.print()}
-                     className="px-6 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 transition-all active:scale-95"
-                   >
-                     Print Invoice
-                   </button>
-                </div>
-              </div>
             </div>
-          </div>
+
+            <div className="flex flex-col lg:flex-row gap-4 items-end justify-between mb-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Search Details</label>
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input 
+                                type="text"
+                                placeholder="ID, email, or name..."
+                                className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-semibold"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Status Filter</label>
+                        <div className="relative">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                            <select 
+                                className="w-full pl-11 pr-10 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-bold text-text-main appearance-none cursor-pointer"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="ALL">All Statuses</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="CONFIRMED">Confirmed</option>
+                                <option value="SHIPPED">Shipped</option>
+                                <option value="DELIVERED">Delivered</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">From Date</label>
+                        <div className="relative">
+                            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                            <input 
+                                type="date"
+                                className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold outline-none focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue transition-all"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5 text-left">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">To Date</label>
+                        <div className="relative">
+                            <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+                            <input 
+                                type="date"
+                                className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold outline-none focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue transition-all"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex gap-2 min-w-fit mt-4 lg:mt-0">
+                    <button 
+                        onClick={resetFilters}
+                        className="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all active:scale-95"
+                        title="Reset Filters"
+                    >
+                        <RotateCcw size={16} />
+                    </button>
+                    <button 
+                        onClick={exportToCSV}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-accent-blue text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                    >
+                        <Download size={14} /> Export Report
+                    </button>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <div className="animate-spin w-8 h-8 border-4 border-accent-blue border-t-transparent rounded-full"></div>
+                </div>
+            ) : error ? (
+                <div className="p-8 bg-red-50 text-red-600 rounded-xl text-center border border-red-100">
+                    <XCircle size={32} className="mx-auto mb-3 opacity-50" />
+                    <p className="font-semibold text-sm">{error}</p>
+                    <button onClick={fetchOrders} className="mt-4 text-xs font-bold underline hover:text-red-700 transition-colors">Try Again</button>
+                </div>
+            ) : (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto text-left">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200">
+                                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Order ID</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Customer</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Total</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredOrders.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="px-6 py-12 text-center text-slate-400 font-medium text-sm">
+                                            No orders found matching your criteria.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredOrders.map((order) => (
+                                        <tr key={order.id} className="hover:bg-slate-50/50 transition-all border-b border-slate-100 last:border-0 group">
+                                            <td className="px-6 py-5">
+                                                <span className="font-mono text-xs font-bold text-slate-400 tracking-tight uppercase">#{order.id.slice(-8)}</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-text-main text-sm">{order.user.firstName} {order.user.lastName}</span>
+                                                    <span className="text-[10px] font-semibold text-text-muted mt-0.5">{order.user.email}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className="font-bold text-text-main text-sm">₹{parseFloat(order.totalAmount).toLocaleString()}</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(order.status)}`}>
+                                                    <div className={`w-1 h-1 rounded-full ${
+                                                        order.status === 'PENDING' ? 'bg-amber-500' : 
+                                                        order.status === 'SHIPPED' ? 'bg-indigo-500' :
+                                                        order.status === 'DELIVERED' ? 'bg-emerald-500' :
+                                                        'bg-slate-400'
+                                                    }`}></div>
+                                                    {order.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5 font-medium text-text-muted text-xs">
+                                                {new Date(order.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <div className="flex items-center justify-end gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button 
+                                                        onClick={() => setSelectedOrder(order)}
+                                                        className="p-2 text-slate-400 hover:text-accent-blue hover:bg-slate-100 rounded-lg transition-all"
+                                                        title="View Details"
+                                                    >
+                                                        <Eye size={18} />
+                                                    </button>
+                                                    <div className="relative group/menu">
+                                                        <button 
+                                                            className="p-2 text-slate-400 hover:text-text-main hover:bg-slate-100 rounded-lg transition-all"
+                                                        >
+                                                            <MoreVertical size={18} />
+                                                        </button>
+                                                        <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden text-left">
+                                                            {['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map(status => (
+                                                                <button
+                                                                    key={status}
+                                                                    onClick={() => handleStatusChange(order.id, status)}
+                                                                    className={`w-full text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-colors ${order.status === status ? 'text-accent-blue bg-blue-50/50' : 'text-text-muted'}`}
+                                                                >
+                                                                    Set to {status}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Order Details Modal */}
+            {selectedOrder && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+                        <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-bold text-text-main">Order Details</h2>
+                                <p className="text-xs text-text-muted font-medium mt-0.5 uppercase tracking-wider">Ref ID: {selectedOrder.id}</p>
+                            </div>
+                            <button 
+                                onClick={() => setSelectedOrder(null)} 
+                                className="p-2 hover:bg-slate-50 rounded-lg transition-all text-slate-400"
+                            >
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-8 overflow-y-auto bg-white text-left">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                <div className="space-y-4">
+                                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                                        <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-3">Customer Information</h4>
+                                        <div className="space-y-1">
+                                            <p className="font-bold text-text-main text-base">{selectedOrder.user.firstName} {selectedOrder.user.lastName}</p>
+                                            <p className="text-xs font-semibold text-accent-blue">{selectedOrder.user.email}</p>
+                                        </div>
+                                        <div className="mt-6 pt-4 border-t border-slate-200/50">
+                                            <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-2">Shipping Address</label>
+                                            <p className="text-xs font-medium text-text-main leading-relaxed">{selectedOrder.shippingAddress || 'No address provided'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 h-full">
+                                        <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-3">Logistics Update</h4>
+                                        <div className="flex flex-col gap-5">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border w-fit ${getStatusColor(selectedOrder.status)}`}>
+                                                <div className={`w-1 h-1 rounded-full ${
+                                                    selectedOrder.status === 'PENDING' ? 'bg-amber-500 animate-pulse' : 
+                                                    selectedOrder.status === 'SHIPPED' ? 'bg-indigo-500' :
+                                                    selectedOrder.status === 'DELIVERED' ? 'bg-emerald-500' :
+                                                    'bg-slate-400'
+                                                }`}></div>
+                                                Current: {selectedOrder.status}
+                                            </span>
+                                            
+                                            <div className="flex flex-col gap-2">
+                                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-0.5">Tracking Number</label>
+                                                <div className="flex gap-2">
+                                                    <input 
+                                                        type="text"
+                                                        placeholder="Enter Tracking #"
+                                                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue transition-all"
+                                                        defaultValue={selectedOrder.trackingNumber || ''}
+                                                        id="tracking-input"
+                                                    />
+                                                    <button 
+                                                        onClick={() => {
+                                                            const val = document.getElementById('tracking-input').value;
+                                                            handleStatusChange(selectedOrder.id, selectedOrder.status, val);
+                                                        }}
+                                                        className="px-4 py-2 bg-text-main text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
+                                                    >
+                                                        Update
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mb-10">
+                                <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-4">Order Items</h4>
+                                <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                    {selectedOrder.orderItems.map((item) => (
+                                        <div key={item.id} className="flex items-center gap-4 p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                                            <div className="w-12 h-12 bg-white rounded-lg flex-shrink-0 border border-slate-100 p-1">
+                                                <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-contain" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-text-main truncate">{item.product.name}</p>
+                                                <p className="text-[10px] font-semibold text-text-muted mt-0.5">
+                                                    Qty: {item.quantity} × ₹{parseFloat(item.price).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="text-sm font-bold text-text-main">
+                                                ₹{(item.quantity * parseFloat(item.price)).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-900 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between text-white shadow-lg">
+                                <div className="text-center md:text-left mb-4 md:mb-0">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">Total Amount</p>
+                                    <p className="text-3xl font-bold tracking-tight">₹{parseFloat(selectedOrder.totalAmount).toLocaleString()}</p>
+                                </div>
+                                <button 
+                                    onClick={() => window.print()}
+                                    className="flex items-center gap-2 px-6 py-3 bg-white text-slate-900 rounded-lg font-bold uppercase tracking-wider text-[10px] hover:bg-slate-100 transition-all active:scale-95"
+                                >
+                                    <ExternalLink size={14} /> Print Invoice
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default OrdersManagementPage;

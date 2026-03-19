@@ -18,7 +18,7 @@ export class AddressService {
       data: {
         ...createAddressDto,
         userId,
-      } as any, // Temporary cast as Prisma types might not be regenerated yet
+      },
     });
   }
 
@@ -47,7 +47,7 @@ export class AddressService {
 
     return this.prisma.address.update({
       where: { id },
-      data: updateAddressDto as any,
+      data: updateAddressDto,
     });
   }
 

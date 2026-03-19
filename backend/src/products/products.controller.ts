@@ -10,8 +10,9 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -43,26 +44,31 @@ export class ProductsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FilesInterceptor('images', 10))
   async create(
     @Body() data: CreateProductDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     let imageUrl = data.imageUrl || '';
+    const imageGallery: string[] = [];
     
-    if (file) {
+    if (files && files.length > 0) {
       const folder = await this.getFolderName(data.categoryId);
-      const uploadResult = await this.cloudinaryService.uploadImage(file, folder);
-      imageUrl = uploadResult.secure_url;
-    }
-
-    if (!imageUrl && !file) {
-      imageUrl = ''; 
+      
+      // First file is the main image if not provided
+      for (let i = 0; i < files.length; i++) {
+        const uploadResult = await this.cloudinaryService.uploadImage(files[i], folder);
+        if (i === 0 && !imageUrl) {
+          imageUrl = uploadResult.secure_url;
+        }
+        imageGallery.push(uploadResult.secure_url);
+      }
     }
 
     return this.productsService.create({
       ...data,
       imageUrl,
+      imageGallery,
     });
   }
 
@@ -79,30 +85,35 @@ export class ProductsController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FilesInterceptor('images', 10))
   async update(
     @Param('id') id: string,
     @Body() updateData: UpdateProductDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
-    if (file) {
-      const currentProduct = await this.productsService.findOne(id);
+    const currentProduct = await this.productsService.findOne(id);
+    const imageGallery: string[] = [];
+
+    if (files && files.length > 0) {
       const categoryId = updateData.categoryId || currentProduct.categoryId;
       const folder = await this.getFolderName(categoryId);
       
-      const uploadResult = await this.cloudinaryService.uploadImage(file, folder);
-      updateData.imageUrl = uploadResult.secure_url;
-      
-      // Cleanup old image
-      if (currentProduct.imageUrl) {
-        const publicId = currentProduct.imageUrl.split('/').slice(-3).join('/').split('.')[0];
-        if (publicId && publicId.includes('shopping-app')) {
-          await this.cloudinaryService.deleteImage(publicId);
-        }
+      for (const file of files) {
+        const uploadResult = await this.cloudinaryService.uploadImage(file, folder);
+        imageGallery.push(uploadResult.secure_url);
+      }
+
+      // If main image was not updated via URL but files were uploaded, 
+      // we can optionally update the main image to the first file
+      if (!updateData.imageUrl) {
+        updateData.imageUrl = imageGallery[0];
       }
     }
 
-    return this.productsService.update(id, updateData);
+    return this.productsService.update(id, {
+      ...updateData,
+      imageGallery: imageGallery.length > 0 ? imageGallery : undefined,
+    });
   }
 
   @Delete(':id')

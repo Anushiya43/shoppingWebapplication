@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
   color-scheme: light;
-  color: #0F1111;
-  background-color: #f3f3f3;
+  color: #1e293b;
+  background-color: #f8fafc;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -23,13 +23,32 @@ body {
 }
 
 @theme {
-  --color-amazon-navy-900: #131921;
-  --color-amazon-navy-800: #232f3e;
-  --color-amazon-orange: #ff9900;
-  --color-amazon-orange-light: #febd69;
-  --color-amazon-blue: #007185;
-  --color-amazon-text: #0F1111;
-  --color-amazon-text-gray: #565959;
-  --color-amazon-white: #ffffff;
-  --color-amazon-bg: #f3f3f3;
+  --color-primary-navy: #0f172a;
+  --color-primary-indigo: #312e81;
+  --color-sidebar-navy: #1e293b;
+  --color-accent-blue: #2563eb;
+  --color-accent-emerald: #10b981;
+  --color-accent-amber: #f59e0b;
+  --color-accent-cyan: #06b6d4;
+  --color-text-main: #1e293b;
+  --color-text-muted: #64748b;
+  --color-bg-main: #f8fafc;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-in-bottom {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
+
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-slide-in-bottom: slide-in-bottom 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-shake: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }

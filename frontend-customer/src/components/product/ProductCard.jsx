@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, ShoppingCart } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
+import useAuthStore from '../../store/useAuthStore';
+import useCartStore from '../../store/useCartStore';
+import { useNotification } from '../../context/NotificationContext';
 
 const ProductCard = ({ product }) => {
-  const { cart, addItem } = useCart();
-  const { user } = useAuth();
+  const cart = useCartStore(state => state.cart);
+  const addItem = useCartStore(state => state.addItem);
+  const user = useAuthStore(state => state.user);
+  const { showNotification } = useNotification();
+  const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
 
   const discountedPrice = product.discountPercentage
@@ -20,26 +25,28 @@ const ProductCard = ({ product }) => {
   const handleAddToCart = async (e) => {
     e.stopPropagation();
     if (!user) {
-      alert('Please sign in to add items to cart');
+      showNotification('Please sign in to add items to cart', 'info');
+      navigate('/login', { state: { from: window.location.pathname } });
       return;
     }
     setAdding(true);
     try {
       await addItem(product.id, 1);
+      showNotification('Item added to cart!', 'success');
     } catch (err) {
       console.error('Add to cart failed', err);
-      if (err.response?.data?.message) {
-        alert(err.response.data.message);
-      } else {
-        alert('Failed to add to cart. Please try again.');
-      }
+      const msg = err.response?.data?.message || 'Failed to add to cart. Please try again.';
+      showNotification(msg, 'error');
     } finally {
       setAdding(false);
     }
   };
 
   return (
-    <div className="bg-white p-4 flex flex-col cursor-pointer group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl border border-gray-100 relative h-full">
+    <div 
+      onClick={() => navigate(`/product/${product.id}`)}
+      className="bg-white p-4 flex flex-col cursor-pointer group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 rounded-2xl border border-gray-100 relative h-full"
+    >
       {product.discountPercentage > 0 && (
         <span className="absolute top-4 left-4 z-10 bg-accent-pink text-white text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-lg shadow-lg shadow-accent-pink/20">
           -{Math.round(product.discountPercentage)}% OFF

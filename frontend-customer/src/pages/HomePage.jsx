@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, ShieldAlert, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
@@ -6,7 +7,7 @@ import ProductCard from '../components/product/ProductCard';
 import LoginModal from '../components/common/LoginModal';
 import { getProducts } from '../api/products';
 import { getCategories } from '../api/categories';
-import { useAuth } from '../context/AuthContext';
+import { getBanners } from '../api/banners';
 
 const ProductCardSkeleton = () => (
   <div className="bg-white p-4 rounded-xl shadow-sm animate-pulse flex flex-col h-full">
@@ -17,27 +18,8 @@ const ProductCardSkeleton = () => (
   </div>
 );
 
-const BannerCarousel = () => {
-  const banners = [
-    {
-      id: 1,
-      image: '/banners/shopping_banner_vibrant_1773657561318.png',
-      title: 'Modern Style',
-      subtitle: 'Premium gadgets for your life'
-    },
-    {
-      id: 2,
-      image: '/banners/shopping_banner_fashion_1773657681034.png',
-      title: 'Elegance Redefined',
-      subtitle: 'Explore our latest collection'
-    },
-    {
-      id: 3,
-      image: '/banners/shopping_banner_tech_1773657700785.png',
-      title: 'Future Tech',
-      subtitle: 'Innovation at your fingertips'
-    }
-  ];
+const BannerCarousel = ({ banners }) => {
+  if (!banners || banners.length === 0) return null;
 
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -74,7 +56,7 @@ const BannerCarousel = () => {
       <div className="absolute inset-0 flex transition-transform duration-700 ease-in-out" style={{ transform: `translateX(-${current * 100}%)` }}>
         {banners.map((banner) => (
           <div key={banner.id} className="min-w-full h-full relative">
-            <img src={banner.image} alt={banner.title} className="w-full h-full object-cover" />
+            <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-primary-900/20 to-transparent flex flex-col justify-center px-8 md:px-20 text-white">
               <h2 className="text-3xl md:text-5xl font-black mb-2 animate-fade-in-up">{banner.title}</h2>
               <p className="text-lg md:text-xl text-cyan-200 mb-6 max-w-md">{banner.subtitle}</p>
@@ -106,8 +88,12 @@ const BannerCarousel = () => {
   );
 };
 
+import useAuthStore from '../store/useAuthStore';
+
 const HomePage = () => {
-  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -115,6 +101,7 @@ const HomePage = () => {
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -122,6 +109,10 @@ const HomePage = () => {
     getCategories()
       .then(res => setCategories(res.data))
       .catch(err => console.error('Failed to fetch categories:', err));
+    
+    getBanners()
+      .then(res => setBanners(res.data))
+      .catch(err => console.error('Failed to fetch banners:', err));
   }, []);
 
   const fetchProducts = async () => {
@@ -234,14 +225,14 @@ const HomePage = () => {
         onSearchChange={setSearchQuery}
         onSearch={handleSearch}
         onMobileMenuOpen={() => setMobileMenuOpen(true)}
-        onLoginClick={() => setLoginModalOpen(true)}
+        onLoginClick={() => navigate('/login')}
       />
 
       {/* Main Content */}
       <main className="max-w-[1500px] mx-auto pb-20 md:pb-10 pt-4 px-4 sm:px-6">
         
         {/* Banner Section */}
-        {!searchQuery && selectedCategory === 'All' && <BannerCarousel />}
+        {!searchQuery && selectedCategory === 'All' && <BannerCarousel banners={banners} />}
 
         <div className="pt-2">
           {/* Section Title */}

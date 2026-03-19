@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle2, ArrowLeft, ShieldAlert, CreditCard } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import useAuthStore from '../store/useAuthStore';
+import useCartStore from '../store/useCartStore';
+import { useNotification } from '../context/NotificationContext';
 import AddressSelector from '../components/address/AddressSelector';
 
 const CheckoutPage = () => {
-  const { user } = useAuth();
-  const { cart, cartCount, cartTotal, clearCart } = useCart();
+  const user = useAuthStore(state => state.user);
+  const cart = useCartStore(state => state.cart);
+  const cartCount = useCartStore(state => state.cartCount);
+  const cartTotal = useCartStore(state => state.getCartTotal());
+  const clearCart = useCartStore(state => state.clearCart);
+  const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [isPlacing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
@@ -16,14 +21,34 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (!user) {
       navigate('/');
+      return;
     }
+
+    // Auto-select default address
+    const fetchAndSelectDefault = async () => {
+      try {
+        const { getAddresses } = await import('../api/address');
+        const res = await getAddresses();
+        const defaultAddr = res.data.find(a => a.isDefault);
+        if (defaultAddr) {
+          setSelectedAddressId(defaultAddr.id);
+        } else if (res.data.length > 0) {
+          // Fallback to first address if no default found
+          setSelectedAddressId(res.data[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to pre-select address', err);
+      }
+    };
+
+    fetchAndSelectDefault();
   }, [user, navigate]);
 
   if (!user) return null;
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
-      alert('Please select or add a delivery address');
+      showNotification('Please select or add a delivery address', 'warning');
       return;
     }
 
@@ -36,40 +61,22 @@ const CheckoutPage = () => {
       const selected = addrRes.data.find(a => a.id === selectedAddressId);
       
       if (!selected) {
-        alert('Selected address not found');
+        showNotification('Selected address not found', 'error');
         return;
       }
 
       const formattedAddress = `${selected.fullName}, ${selected.phoneNumber}, ${selected.street}, ${selected.city}, ${selected.district}, ${selected.state} - ${selected.zipCode}, India`;
       
-      await createOrder({ shippingAddress: formattedAddress });
-      setPlaced(true);
+      const res = await createOrder({ shippingAddress: formattedAddress });
       await clearCart();
-      setTimeout(() => navigate('/orders'), 3000);
+      navigate(`/order-success/${res.data.id}`);
     } catch (err) {
-      alert('Failed to place order: ' + (err.response?.data?.message || 'Unknown error'));
+      showNotification('Failed to place order: ' + (err.response?.data?.message || 'Unknown error'), 'error');
     } finally {
       setPlacing(false);
     }
   };
 
-  if (placed) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 animate-fade-in text-center">
-        <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100 animate-bounce">
-          <CheckCircle2 size={48} className="text-green-500" />
-        </div>
-        <h1 className="text-4xl font-black text-primary-900 mb-3 tracking-tight">Order complete!</h1>
-        <p className="text-text-muted text-lg max-w-sm mb-8 font-medium">Thank you for choosing ModernShop. We're preparing your premium items for delivery.</p>
-        <button 
-          onClick={() => navigate('/orders')} 
-          className="px-8 py-3 bg-primary-900 hover:bg-primary-800 text-white rounded-2xl font-bold shadow-xl shadow-primary-900/10 transition-all active:scale-95"
-        >
-          View Your Orders
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-surface-bg font-sans pb-20">

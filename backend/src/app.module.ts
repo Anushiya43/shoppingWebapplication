@@ -9,6 +9,9 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { AddressModule } from './address/address.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { UsersModule } from './users/users.module';
+import { BannersModule } from './banners/banners.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { AddressModule } from './address/address.module';
     CartModule,
     OrdersModule,
     AddressModule,
+    AnalyticsModule,
+    UsersModule,
+    BannersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
