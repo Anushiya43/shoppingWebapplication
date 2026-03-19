@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Search, ShieldAlert, ShieldCheck, UserX, UserCheck, Mail, Phone, Calendar } from 'lucide-react';
 import { getUsers, toggleBlockUser } from '../api/users';
-import { useAuth } from '../context/AuthContext';
+import useAuthStore from '../store/useAuthStore';
 
 const UserManagementPage = () => {
-    const { user: currentAdmin } = useAuth();
+    const { user: currentAdmin } = useAuthStore();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

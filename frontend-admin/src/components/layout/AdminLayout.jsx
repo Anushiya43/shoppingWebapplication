@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import useAuthStore from '../../store/useAuthStore';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   LogOut, ShieldAlert, X, LayoutGrid, Menu, ArrowLeft, Image as ImageIcon,
   Ticket
 } from 'lucide-react';
 
-const AdminLayout = ({ children, user }) => {
-  const { logout } = useAuth();
+const AdminLayout = ({ children }) => {
+  const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
