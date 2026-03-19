@@ -1,10 +1,7 @@
-import React, { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams();
-  const { setTokens } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,11 +16,13 @@ const AuthSuccess = () => {
     const userId = searchParams.get('user_id');
 
     if (accessToken && refreshToken) {
-      setTokens(accessToken, refreshToken, userId);
+      localStorage.setItem('access_token_admin', accessToken);
+      localStorage.setItem('refresh_token_admin', refreshToken);
+      if (userId) localStorage.setItem('user_id_admin', userId);
       navigate('/');
       window.location.reload();
     }
-  }, [searchParams, setTokens, navigate]);
+  }, [searchParams, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg-slate">

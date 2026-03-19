@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import useAuthStore from '../store/useAuthStore';
+import { googleLoginUrl } from '../api/auth';
 import { ShieldAlert, LogIn, Smartphone, LogOut, ShoppingCart } from 'lucide-react';
 import AdminLayout from './layout/AdminLayout';
 import LoginModal from './auth/LoginModal';
@@ -13,7 +14,7 @@ import BannersPage from './BannersPage';
 import CouponsPage from './CouponsPage';
 
 const Dashboard = () => {
-  const { user, loginWithGoogle, logout } = useAuth();
+  const { user, logout, loading, initAuth } = useAuthStore();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,6 +23,14 @@ const Dashboard = () => {
 
   const currentPath = location.pathname;
   const error = searchParams.get('error');
+
+  const loginWithGoogle = () => {
+    window.location.href = googleLoginUrl;
+  };
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     if ((user && user.role !== 'ADMIN') || error === 'admin_only') {
@@ -39,6 +48,19 @@ const Dashboard = () => {
       return () => clearInterval(timer);
     }
   }, [user, logout, error, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-slate flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-accent-blue/10 rounded-full blur-[100px] -ml-48 -mt-48"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent-cyan/10 rounded-full blur-[100px] -mr-48 -mb-48"></div>
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-accent-blue border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-text-muted font-black text-[10px] uppercase tracking-[0.3em] animate-pulse">Synchronizing Session</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user && error !== 'admin_only') {
     return (

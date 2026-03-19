@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import useAuthStore from '../../store/useAuthStore';
+import { googleLoginUrl } from '../../api/auth';
 import { X, ShieldAlert, LogIn, Smartphone, Hash } from 'lucide-react';
 
 const LoginModal = ({ isOpen, onClose }) => {
-  const { loginWithGoogle, loginWithPhone, verifyPhoneOtp } = useAuth();
+  const { loginWithPhone, verifyPhoneOtp } = useAuthStore();
   const [step, setStep] = useState('choice'); // choice, phone, otp
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
