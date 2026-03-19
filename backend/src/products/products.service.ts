@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Product } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ReviewsService } from '../reviews/reviews.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private reviewsService: ReviewsService,
+  ) {}
 
   async create(data: CreateProductDto & { imageGallery?: string[] }): Promise<Product> {
     try {
@@ -78,20 +82,25 @@ export class ProductsService {
     };
   }
 
-  async findOne(id: string): Promise<Product & { category: any, images: any[] }> {
+  async findOne(id: string): Promise<Product & { category: any; images: any[]; reviews: any[] }> {
     const product = await this.prisma.product.findFirst({
       where: { id, isDeleted: false },
-      include: { 
+      include: {
         category: true,
-        images: true 
+        images: true,
       },
     });
-    
+
     if (!product || product.isDeleted) {
       throw new NotFoundException('Product not found or has been discontinued');
     }
-    
-    return product;
+
+    const reviews = await this.reviewsService.findByProduct(id);
+
+    return {
+      ...product,
+      reviews,
+    } as any;
   }
 
   async update(id: string, data: UpdateProductDto & { imageGallery?: string[] }): Promise<Product> {

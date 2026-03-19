@@ -6,6 +6,7 @@ import {
   Package, Facebook, Twitter, MessageCircle
 } from 'lucide-react';
 import { useProduct } from '../hooks/useProduct';
+import { submitReview } from '../api/reviews';
 import useCartStore from '../store/useCartStore';
 import useAuthStore from '../store/useAuthStore';
 import { useNotification } from '../context/NotificationContext';
@@ -19,10 +20,43 @@ const ProductDetailPage = () => {
   const addItem = useCartStore(state => state.addItem);
   const { showNotification } = useNotification();
 
-  const { product, loading, error } = useProduct(id);
+  const { product, loading, error, refetch } = useProduct(id);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [mainImage, setMainImage] = useState(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      showNotification('Please sign in to leave a review', 'info');
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      showNotification('Please add a comment', 'error');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      await submitReview({
+        productId: id,
+        rating: reviewRating,
+        comment: reviewComment
+      });
+      showNotification('Thank you for your review!', 'success');
+      setReviewComment('');
+      setReviewRating(5);
+      refetch();
+    } catch (err) {
+      showNotification(err.response?.data?.message || 'Failed to submit review', 'error');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   useEffect(() => {
     if (product) {
@@ -228,6 +262,133 @@ const ProductDetailPage = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="mt-24 lg:mt-32 border-t border-slate-100 pt-16 lg:pt-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
+            
+            {/* Review Summary */}
+            <div className="lg:col-span-4 space-y-8">
+              <div>
+                <h2 className="text-3xl font-black text-primary-900 mb-6 uppercase tracking-tight">Client Feedback</h2>
+                <div className="flex items-end gap-4 mb-4">
+                  <span className="text-7xl font-black text-primary-900 leading-none tracking-tighter">
+                    {product.reviews?.length > 0 
+                      ? (product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length).toFixed(1)
+                      : '0.0'}
+                  </span>
+                  <div className="pb-2">
+                    <div className="flex text-amber-400 mb-1">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star 
+                          key={s} 
+                          size={16} 
+                          fill={s <= Math.round(product.reviews?.reduce((acc, r) => acc + r.rating, 0) / product.reviews?.length || 0) ? "currentColor" : "none"} 
+                        />
+                      ))}
+                    </div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Based on {product.reviews?.length || 0} experiences</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Write a Review Form */}
+              {user ? (
+                <div className="bg-slate-50/50 rounded-[2rem] p-8 border border-slate-100">
+                  <h3 className="text-xs font-black text-primary-900 uppercase tracking-[0.2em] mb-6">Share Your Experience</h3>
+                  <form onSubmit={handleSubmitReview} className="space-y-6">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Your Rating</label>
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setReviewRating(s)}
+                            className={`p-2 transition-all active:scale-90 ${s <= reviewRating ? 'text-amber-400' : 'text-slate-200'}`}
+                          >
+                            <Star size={24} fill={s <= reviewRating ? "currentColor" : "none"} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Your Thoughts</label>
+                      <textarea
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder="Tell others about this premium selection..."
+                        className="w-full bg-white border border-slate-100 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary-900/5 outline-none transition-all min-h-[120px] resize-none font-medium"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="w-full py-4 bg-primary-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary-900/20 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {submittingReview ? 'Submitting...' : 'Post Experience'}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8 text-center">
+                  <p className="text-slate-500 font-medium text-xs mb-6 uppercase tracking-widest">Sign in to share your thoughts on this item</p>
+                  <Link to="/login" className="inline-block px-8 py-3 bg-white border border-slate-200 text-primary-900 rounded-full text-[10px] font-black uppercase tracking-widest hover:shadow-lg transition-all">Authenticate</Link>
+                </div>
+              )}
+            </div>
+
+            {/* Review List */}
+            <div className="lg:col-span-8 space-y-10">
+              {product.reviews?.length > 0 ? (
+                product.reviews.map((review) => (
+                  <div key={review.id} className="group animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary-900 rounded-full flex items-center justify-center text-white text-[10px] font-black uppercase tracking-widest">
+                          {review.user?.firstName?.[0]}{review.user?.lastName?.[0]}
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-primary-900 uppercase tracking-widest">
+                            {review.user?.firstName} {review.user?.lastName}
+                          </p>
+                          <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5">
+                            {review.isVerified ? (
+                              <span className="text-emerald-600 flex items-center gap-1">
+                                <ShieldCheck size={10} strokeWidth={3} /> Verified Purchaser
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">Verified Member</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex text-amber-400">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star key={s} size={12} fill={s <= review.rating ? "currentColor" : "none"} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-slate-600 leading-relaxed font-medium text-sm pl-[52px]">
+                      {review.comment}
+                    </p>
+                    <div className="ml-[52px] mt-4 flex items-center gap-4 text-[9px] font-bold text-slate-300 uppercase tracking-widest">
+                      <span>{new Date(review.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                      <button className="hover:text-primary-900 transition-colors">Helpful</button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 bg-slate-50/30 rounded-[3rem] border border-dashed border-slate-200">
+                  <MessageCircle size={48} className="text-slate-200 mb-6" />
+                  <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Be the first to define this experience</p>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>
