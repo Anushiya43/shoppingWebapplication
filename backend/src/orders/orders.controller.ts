@@ -4,6 +4,7 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { OrderStatus } from '@prisma/client';
 
 @Controller('orders')
 @UseGuards(AuthGuard('jwt'))
@@ -23,7 +24,7 @@ export class OrdersController {
   @Roles('ADMIN')
   async updateStatus(
     @Param('id') orderId: string,
-    @Body() updateData: { status?: string; trackingNumber?: string },
+    @Body() updateData: { status?: OrderStatus; trackingNumber?: string },
   ) {
     return this.ordersService.updateOrderStatus(orderId, updateData);
   }

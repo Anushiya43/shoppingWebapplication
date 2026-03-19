@@ -1,10 +1,15 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShoppingBag, Minus, Plus, Trash2, CheckCircle2, ArrowLeft } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import useCartStore from '../store/useCartStore';
 
 const CartPage = () => {
-  const { cart, loading, updateQuantity, removeItem, cartCount, cartTotal } = useCart();
+  const cart = useCartStore(state => state.cart);
+  const loading = useCartStore(state => state.loading);
+  const updateQuantity = useCartStore(state => state.updateQuantity);
+  const removeItem = useCartStore(state => state.removeItem);
+  const cartCount = useCartStore(state => state.getCartCount());
+  const cartTotal = useCartStore(state => state.getCartTotal());
   const navigate = useNavigate();
 
   if (loading && !cart) {

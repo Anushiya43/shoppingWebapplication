@@ -11,6 +11,7 @@ import { OrdersModule } from './orders/orders.module';
 import { AddressModule } from './address/address.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { UsersModule } from './users/users.module';
+import { BannersModule } from './banners/banners.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UsersModule } from './users/users.module';
     AddressModule,
     AnalyticsModule,
     UsersModule,
+    BannersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

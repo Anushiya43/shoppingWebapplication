@@ -33,4 +33,8 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   imageUrl: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  imageGallery?: string[];
 }

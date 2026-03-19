@@ -22,8 +22,8 @@ const InventoryPage = () => {
         stock: '',
         categoryId: '',
     });
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [previewUrls, setPreviewUrls] = useState([]);
 
     const [submitting, setSubmitting] = useState(false);
     const [notification, setNotification] = useState(null);
@@ -68,13 +68,23 @@ const InventoryPage = () => {
     };
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => setPreviewUrl(reader.result);
-            reader.readAsDataURL(file);
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            setSelectedFiles(prev => [...prev, ...files]);
+            
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setPreviewUrls(prev => [...prev, reader.result]);
+                };
+                reader.readAsDataURL(file);
+            });
         }
+    };
+
+    const removeImage = (index) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setPreviewUrls(prev => prev.filter((_, i) => i !== index));
     };
 
     const validateForm = () => {
@@ -84,7 +94,7 @@ const InventoryPage = () => {
         if (!formData.price || formData.price <= 0) newErrors.price = 'Valid price is required';
         if (!formData.stock || formData.stock < 0) newErrors.stock = 'Valid stock amount is required';
         if (!formData.categoryId) newErrors.categoryId = 'Category is required';
-        if (!currentProduct && !selectedFile) newErrors.image = 'Product image is required';
+        if (!currentProduct && selectedFiles.length === 0) newErrors.image = 'At least one product image is required';
         
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -102,7 +112,11 @@ const InventoryPage = () => {
         try {
             const data = new FormData();
             Object.keys(formData).forEach(key => data.append(key, formData[key]));
-            if (selectedFile) data.append('image', selectedFile);
+            
+            // Append multiple files
+            selectedFiles.forEach(file => {
+                data.append('images', file);
+            });
 
             if (currentProduct) {
                 await updateProduct(currentProduct.id, data);
@@ -147,7 +161,9 @@ const InventoryPage = () => {
                 stock: product.stock,
                 categoryId: product.categoryId,
             });
-            setPreviewUrl(product.imageUrl);
+            // Handle existing images
+            const existingImages = product.images?.map(img => img.url) || [product.imageUrl];
+            setPreviewUrls(existingImages.filter(Boolean));
         } else {
             setCurrentProduct(null);
             setFormData({
@@ -158,17 +174,17 @@ const InventoryPage = () => {
                 stock: '',
                 categoryId: categories[0]?.id || '',
             });
-            setPreviewUrl(null);
+            setPreviewUrls([]);
         }
-        setSelectedFile(null);
+        setSelectedFiles([]);
         setIsModalOpen(true);
         setErrors({});
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
-        setSelectedFile(null);
-        setPreviewUrl(null);
+        setSelectedFiles([]);
+        setPreviewUrls([]);
         setErrors({});
     };
 
@@ -365,34 +381,54 @@ const InventoryPage = () => {
                             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Image Upload */}
                                 <div className="space-y-4">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-text-muted">Product Image</label>
-                                    <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-accent-blue transition-all relative group overflow-hidden"
-                                    >
-                                        {previewUrl ? (
-                                            <>
-                                                <img src={previewUrl} alt="Preview" className="w-full h-full object-contain p-4" />
-                                                <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
-                                                    <Upload size={24} className="text-text-main" />
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-text-muted">Product Gallery</label>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{selectedFiles.length + (currentProduct?.images?.length || 0)} Images</span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 min-h-[200px]">
+                                        {previewUrls.map((url, index) => (
+                                            <div key={index} className="group relative aspect-square bg-slate-50 rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                                                <img src={url} alt={`Preview ${index}`} className="w-full h-full object-contain p-2" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(index)}
+                                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                                {index === 0 && (
+                                                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-accent-blue text-white text-[8px] font-black uppercase tracking-widest rounded-md shadow-lg">
+                                                        Main
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                        
+                                        {(previewUrls.length < 10) && (
+                                            <div
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className={`aspect-square bg-slate-50 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-accent-blue transition-all group ${errors.image ? 'border-red-300' : 'border-slate-200'}`}
+                                            >
+                                                <div className="text-center p-4">
+                                                    <Upload size={20} className={`mx-auto mb-2 group-hover:text-accent-blue transition-colors ${errors.image ? 'text-red-400' : 'text-slate-400'}`} />
+                                                    <p className={`text-[10px] font-bold uppercase tracking-wider group-hover:text-accent-blue transition-colors ${errors.image ? 'text-red-500' : 'text-slate-400'}`}>
+                                                        {previewUrls.length > 0 ? 'Add More' : 'Upload Images'}
+                                                    </p>
                                                 </div>
-                                            </>
-                                        ) : (
-                                            <div className="text-center p-6 text-slate-400 group-hover:text-accent-blue transition-colors">
-                                                <Upload size={32} className={`mx-auto mb-2 ${errors.image ? 'text-red-400' : 'opacity-50'}`} />
-                                                <p className={`text-[10px] font-bold uppercase tracking-wider ${errors.image ? 'text-red-500' : ''}`}>
-                                                    {errors.image || 'Click to upload'}
-                                                </p>
                                             </div>
                                         )}
                                     </div>
+
                                     <input
                                         type="file"
                                         ref={fileInputRef}
                                         className="hidden"
                                         accept="image/*"
+                                        multiple
                                         onChange={handleFileChange}
                                     />
+                                    {errors.image && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.image}</p>}
                                 </div>
 
                                 {/* Details */}

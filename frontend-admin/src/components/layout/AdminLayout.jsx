@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
-  LogOut, ShieldAlert, X, LayoutGrid, Menu, ArrowLeft
+  LogOut, ShieldAlert, X, LayoutGrid, Menu, ArrowLeft, Image as ImageIcon
 } from 'lucide-react';
 
 const AdminLayout = ({ children, user }) => {
@@ -43,6 +43,7 @@ const AdminLayout = ({ children, user }) => {
           {[
             { label: 'Dashboard', path: '/', icon: LayoutDashboard },
             { label: 'Inventory', path: '/inventory', icon: Package },
+            { label: 'Banners', path: '/banners', icon: ImageIcon },
             { label: 'Categories', path: '/categories', icon: LayoutGrid },
             { label: 'Orders', path: '/orders', icon: ShoppingCart },
             { label: 'Users', path: '/users', icon: Users },

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Package } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import useAuthStore from '../store/useAuthStore';
 import { useNotification } from '../context/NotificationContext';
 
+import { useOrders } from '../hooks/useOrders';
+
 const OrdersPage = () => {
-  const { user } = useAuth();
+  const user = useAuthStore(state => state.user);
   const { showNotification } = useNotification();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { orders, loading, error, cancelOrder } = useOrders();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,34 +18,14 @@ const OrdersPage = () => {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const { getOrders } = await import('../api/orders');
-        const res = await getOrders();
-        setOrders(res.data);
-      } catch (err) {
-        console.error('Failed to fetch orders', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
-  }, []);
-
   const handleCancelOrder = async (orderId) => {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
 
-    try {
-      const { cancelOrder } = await import('../api/orders');
-      await cancelOrder(orderId);
-      // Refresh orders
-      const { getOrders } = await import('../api/orders');
-      const res = await getOrders();
-      setOrders(res.data);
+    const result = await cancelOrder(orderId);
+    if (result.success) {
       showNotification('Order cancelled successfully', 'success');
-    } catch (err) {
-      showNotification('Failed to cancel order: ' + (err.response?.data?.message || 'Unknown error'), 'error');
+    } else {
+      showNotification(result.message, 'error');
     }
   };
 
@@ -89,13 +70,33 @@ const OrdersPage = () => {
         <h1 className="text-4xl font-black text-primary-900 mb-10 italic">Your Orders</h1>
 
         {loading ? (
-          <div className="text-center py-10">
-            <div className="animate-spin w-8 h-8 border-4 border-amazon-orange border-t-transparent rounded-full mx-auto"></div>
+          <div className="text-center py-20">
+            <div className="animate-spin w-12 h-12 border-4 border-primary-900 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-text-muted font-bold animate-pulse">Loading your history...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-white p-12 rounded-[32px] border-2 border-dashed border-red-100 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Package size={32} className="text-red-400" />
+            </div>
+            <h3 className="text-xl font-bold text-primary-900 mb-2">Failed to load orders</h3>
+            <p className="text-text-muted mb-8 max-w-sm mx-auto">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-8 py-3 bg-primary-900 text-white rounded-2xl font-bold hover:shadow-xl transition-all"
+            >
+              Try Again
+            </button>
           </div>
         ) : orders.length === 0 ? (
-          <div className="bg-white p-8 rounded border border-gray-300 text-center">
-            <p className="text-gray-600 mb-4">You have not placed any orders yet.</p>
-            <Link to="/" className="text-amazon-blue hover:underline">Continue shopping</Link>
+          <div className="bg-white p-12 rounded-[32px] border-2 border-dashed border-gray-100 text-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Package size={32} className="text-gray-200" />
+            </div>
+            <p className="text-text-muted font-bold mb-8">You haven't placed any premium orders yet.</p>
+            <Link to="/" className="px-8 py-3 bg-primary-900 text-white rounded-2xl font-bold hover:shadow-xl transition-all inline-block">
+              Start Shopping
+            </Link>
           </div>
         ) : (
           <div className="space-y-8">

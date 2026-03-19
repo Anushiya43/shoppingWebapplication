@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldAlert, Smartphone, Hash, ArrowLeft, LogIn } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import useAuthStore from '../store/useAuthStore';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import Alert from '../components/common/Alert';
 
 const LoginPage = () => {
-  const { loginWithGoogle, loginWithPhone, verifyPhoneOtp } = useAuth();
+  const loginWithGoogle = useAuthStore(state => state.loginWithGoogle);
+  const loginWithPhone = useAuthStore(state => state.loginWithPhone);
+  const verifyPhoneOtp = useAuthStore(state => state.verifyPhoneOtp);
   const [step, setStep] = useState('choice'); // choice, phone, otp
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');

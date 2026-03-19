@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, Product } from '@prisma/client';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
@@ -8,14 +8,20 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateProductDto) {
+  async create(data: CreateProductDto & { imageGallery?: string[] }): Promise<Product> {
     try {
+      const { imageGallery, ...productData } = data;
       return await this.prisma.product.create({
         data: {
-          ...data,
-          price: data.price,
-          discountPercentage: data.discountPercentage || 0,
+          ...productData,
+          price: new Prisma.Decimal(productData.price),
+          discountPercentage: new Prisma.Decimal(productData.discountPercentage || 0),
+          stock: Number(productData.stock),
+          images: {
+            create: imageGallery?.map(url => ({ url })) || []
+          }
         },
+        include: { images: true }
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -23,9 +29,8 @@ export class ProductsService {
           throw new ConflictException('A product with this name already exists');
         }
       }
-      // Handle Prisma validation or other unknown errors to provide better frontend experience
       if (error instanceof Error && error.name === 'PrismaClientValidationError') {
-        throw new ConflictException('Database validation failed. Please ensure all required fields (including image) are provided correctly.');
+        throw new ConflictException('Database validation failed. Please ensure all required fields are provided correctly.');
       }
       throw error;
     }
@@ -33,9 +38,13 @@ export class ProductsService {
 
   async findAll(query: { categoryId?: string; search?: string; page?: number; limit?: number }) {
     const { categoryId, search, page = 1, limit = 10 } = query;
-    const skip = (page - 1) * limit;
+    const skip = (Number(page) - 1) * Number(limit);
+    const take = Number(limit);
 
-    const where: any = {};
+    const where: Prisma.ProductWhereInput = {
+      isDeleted: false,
+    };
+
     if (categoryId) where.categoryId = categoryId;
     if (search) {
       where.OR = [
@@ -47,9 +56,12 @@ export class ProductsService {
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        include: { category: true },
+        include: { 
+          category: true,
+          images: true 
+        },
         skip,
-        take: Number(limit),
+        take,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.product.count({ where }),
@@ -59,32 +71,51 @@ export class ProductsService {
       products,
       meta: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: Number(page),
+        limit: take,
+        totalPages: Math.ceil(total / take),
       },
     };
   }
 
-  async findOne(id: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-      include: { category: true },
+  async findOne(id: string): Promise<Product & { category: any, images: any[] }> {
+    const product = await this.prisma.product.findFirst({
+      where: { id, isDeleted: false },
+      include: { 
+        category: true,
+        images: true 
+      },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    
+    if (!product || product.isDeleted) {
+      throw new NotFoundException('Product not found or has been discontinued');
+    }
+    
     return product;
   }
 
-  async update(id: string, data: UpdateProductDto) {
+  async update(id: string, data: UpdateProductDto & { imageGallery?: string[] }): Promise<Product> {
     try {
+      const { imageGallery, ...productData } = data;
+      
+      // Ensure we don't update a deleted product
+      await this.findOne(id);
+
       return await this.prisma.product.update({
         where: { id },
         data: {
-          ...data,
-          price: data.price !== undefined ? Number(data.price) : undefined,
-          stock: data.stock !== undefined ? Number(data.stock) : undefined,
-          discountPercentage: data.discountPercentage !== undefined ? Number(data.discountPercentage) : undefined,
+          ...productData,
+          price: productData.price !== undefined ? new Prisma.Decimal(productData.price) : undefined,
+          stock: productData.stock !== undefined ? Number(productData.stock) : undefined,
+          discountPercentage: productData.discountPercentage !== undefined ? new Prisma.Decimal(productData.discountPercentage) : undefined,
+          ...(imageGallery && {
+            images: {
+              deleteMany: {},
+              create: imageGallery.map(url => ({ url }))
+            }
+          })
         },
+        include: { images: true }
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -95,17 +126,18 @@ export class ProductsService {
           throw new NotFoundException('Product not found');
         }
       }
-      if (error instanceof Error && error.name === 'PrismaClientValidationError') {
-        throw new ConflictException('Validation failed. Please check if all fields are correct.');
-      }
       throw error;
     }
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<Product> {
     try {
-      return await this.prisma.product.delete({
+      return await this.prisma.product.update({
         where: { id },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+        },
       });
     } catch (error) {
       throw new NotFoundException('Product not found');

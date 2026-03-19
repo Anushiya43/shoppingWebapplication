@@ -8,6 +8,7 @@ const UserManagementPage = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [notification, setNotification] = useState(null);
     const [blockingId, setBlockingId] = useState(null);
@@ -56,11 +57,19 @@ const UserManagementPage = () => {
         }
     };
 
-    const filteredUsers = users.filter(u => 
-        u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(u => {
+        const matchesSearch = 
+            u.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesStatus = 
+            statusFilter === 'all' || 
+            (statusFilter === 'active' && !u.isBlocked) || 
+            (statusFilter === 'blocked' && u.isBlocked);
+            
+        return matchesSearch && matchesStatus;
+    });
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-10 text-left">
@@ -95,6 +104,17 @@ const UserManagementPage = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                </div>
+                <div className="w-full md:w-48">
+                    <select
+                        className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider text-text-main cursor-pointer focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="all">All Status</option>
+                        <option value="active">Active Members</option>
+                        <option value="blocked">Blocked Accounts</option>
+                    </select>
                 </div>
             </div>
 

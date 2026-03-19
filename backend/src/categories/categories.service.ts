@@ -16,9 +16,10 @@ export class CategoriesService {
 
   async findAll() {
     return this.prisma.category.findMany({
+      where: { isDeleted: false },
       include: {
         _count: {
-          select: { products: true },
+          select: { products: { where: { isDeleted: false } } },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -26,9 +27,13 @@ export class CategoriesService {
   }
 
   async findOne(id: string) {
-    const category = await this.prisma.category.findUnique({
-      where: { id },
-      include: { products: true },
+    const category = await this.prisma.category.findFirst({
+      where: { id, isDeleted: false },
+      include: { 
+        products: {
+          where: { isDeleted: false }
+        } 
+      },
     });
     if (!category) throw new NotFoundException('Category not found');
     return category;
@@ -36,6 +41,7 @@ export class CategoriesService {
 
   async update(id: string, data: UpdateCategoryDto) {
     try {
+      await this.findOne(id);
       return await this.prisma.category.update({
         where: { id },
         data,
@@ -47,8 +53,12 @@ export class CategoriesService {
 
   async remove(id: string) {
     try {
-      return await this.prisma.category.delete({
+      return await this.prisma.category.update({
         where: { id },
+        data: {
+          isDeleted: true,
+          deletedAt: new Date(),
+        },
       });
     } catch (error) {
       throw new NotFoundException('Category not found');

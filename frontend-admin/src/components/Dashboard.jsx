@@ -9,6 +9,7 @@ import InventoryPage from './InventoryPage';
 import OrdersManagementPage from './OrdersManagementPage';
 import UserManagementPage from './UserManagementPage';
 import DashboardHome from './dashboard/DashboardHome';
+import BannersPage from './BannersPage';
 
 const Dashboard = () => {
   const { user, loginWithGoogle, logout } = useAuth();
@@ -131,6 +132,7 @@ const Dashboard = () => {
       {currentPath === '/inventory' && <InventoryPage />}
       {currentPath === '/orders' && <OrdersManagementPage />}
       {currentPath === '/users' && <UserManagementPage />}
+      {currentPath === '/banners' && <BannersPage />}
     </AdminLayout>
   );
 };

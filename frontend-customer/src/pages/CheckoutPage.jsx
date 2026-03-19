@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle2, ArrowLeft, ShieldAlert, CreditCard } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
+import useAuthStore from '../store/useAuthStore';
+import useCartStore from '../store/useCartStore';
 import { useNotification } from '../context/NotificationContext';
 import AddressSelector from '../components/address/AddressSelector';
 
 const CheckoutPage = () => {
-  const { user } = useAuth();
-  const { cart, cartCount, cartTotal, clearCart } = useCart();
+  const user = useAuthStore(state => state.user);
+  const cart = useCartStore(state => state.cart);
+  const cartCount = useCartStore(state => state.cartCount);
+  const cartTotal = useCartStore(state => state.getCartTotal());
+  const clearCart = useCartStore(state => state.clearCart);
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [isPlacing, setPlacing] = useState(false);

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, MapPin, Search, ShoppingCart, ChevronDown, Package } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
+import useAuthStore from '../../store/useAuthStore';
+import useCartStore from '../../store/useCartStore';
 
 const Header = ({ 
   categories, 
@@ -14,8 +14,9 @@ const Header = ({
   onMobileMenuOpen,
   onLoginClick
 }) => {
-  const { user, logout } = useAuth();
-  const { cartCount } = useCart();
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
+  const cartCount = useCartStore(state => state.getCartCount());
   const navigate = useNavigate();
 
   return (
@@ -58,7 +59,7 @@ const Header = ({
             }}
           >
             <option value="All">All Departments</option>
-            {categories.map(cat => (
+            {categories?.map(cat => (
               <option key={cat.id} value={cat.name}>{cat.name}</option>
             ))}
           </select>
@@ -159,7 +160,7 @@ const Header = ({
         >
           All Categories
         </button>
-        {categories.map(cat => (
+        {categories?.map(cat => (
           <button
             key={cat.id}
             onClick={() => onCategorySelect(cat)}
