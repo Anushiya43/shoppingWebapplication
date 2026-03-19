@@ -14,6 +14,10 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const loginWithGoogle = () => {
+    window.location.href = googleLoginUrl;
+  };
+
   if (!isOpen) return null;
 
   const handlePhoneSubmit = async (e) => {
