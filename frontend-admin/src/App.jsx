@@ -14,6 +14,7 @@ function App() {
           <Route path="/orders" element={<Dashboard />} />
           <Route path="/users" element={<Dashboard />} />
           <Route path="/banners" element={<Dashboard />} />
+          <Route path="/coupons" element={<Dashboard />} />
           <Route path="/auth-success" element={<AuthSuccess />} />
         </Routes>
       </Router>

@@ -10,6 +10,7 @@ import OrdersManagementPage from './OrdersManagementPage';
 import UserManagementPage from './UserManagementPage';
 import DashboardHome from './dashboard/DashboardHome';
 import BannersPage from './BannersPage';
+import CouponsPage from './CouponsPage';
 
 const Dashboard = () => {
   const { user, loginWithGoogle, logout } = useAuth();
@@ -133,6 +134,7 @@ const Dashboard = () => {
       {currentPath === '/orders' && <OrdersManagementPage />}
       {currentPath === '/users' && <UserManagementPage />}
       {currentPath === '/banners' && <BannersPage />}
+      {currentPath === '/coupons' && <CouponsPage />}
     </AdminLayout>
   );
 };

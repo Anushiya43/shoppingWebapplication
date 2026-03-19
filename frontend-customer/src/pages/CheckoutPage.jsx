@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { CheckCircle2, ArrowLeft, ShieldAlert, CreditCard } from 'lucide-react';
+import { CheckCircle2, ArrowLeft, ShieldAlert, CreditCard, Ticket } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useCartStore from '../store/useCartStore';
 import { useNotification } from '../context/NotificationContext';
@@ -9,14 +9,24 @@ import AddressSelector from '../components/address/AddressSelector';
 const CheckoutPage = () => {
   const user = useAuthStore(state => state.user);
   const cart = useCartStore(state => state.cart);
-  const cartCount = useCartStore(state => state.cartCount);
-  const cartTotal = useCartStore(state => state.getCartTotal());
+  const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+  const cartTotal = cart?.items?.reduce((acc, item) => {
+    const discountedPrice = item.product.discountPercentage 
+        ? item.product.price * (1 - item.product.discountPercentage / 100)
+        : item.product.price;
+    return acc + (discountedPrice * item.quantity);
+  }, 0) || 0;
   const clearCart = useCartStore(state => state.clearCart);
   const { showNotification } = useNotification();
   const navigate = useNavigate();
   const [isPlacing, setPlacing] = useState(false);
   const [placed, setPlaced] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [showOffers, setShowOffers] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -41,10 +51,48 @@ const CheckoutPage = () => {
       }
     };
 
+    const fetchActiveCoupons = async () => {
+      try {
+        const { getActiveCoupons } = await import('../api/coupons');
+        const res = await getActiveCoupons();
+        setAvailableCoupons(res.data);
+      } catch (err) {
+        console.error('Failed to fetch active coupons', err);
+      }
+    };
+
     fetchAndSelectDefault();
+    fetchActiveCoupons();
   }, [user, navigate]);
 
   if (!user) return null;
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setIsValidating(true);
+    try {
+      const { validateCoupon } = await import('../api/coupons');
+      const res = await validateCoupon(couponCode, cartTotal);
+      setAppliedCoupon(res.data);
+      showNotification(`Coupon ${res.data.code} applied successfully!`, 'success');
+    } catch (err) {
+      setAppliedCoupon(null);
+      showNotification(err.response?.data?.message || 'Invalid coupon code', 'error');
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const calculateDiscount = () => {
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.type === 'PERCENTAGE') {
+      return (cartTotal * Number(appliedCoupon.value)) / 100;
+    }
+    return Number(appliedCoupon.value);
+  };
+
+  const discountAmount = calculateDiscount();
+  const grandTotal = Math.max(0, cartTotal - discountAmount);
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
@@ -67,7 +115,10 @@ const CheckoutPage = () => {
 
       const formattedAddress = `${selected.fullName}, ${selected.phoneNumber}, ${selected.street}, ${selected.city}, ${selected.district}, ${selected.state} - ${selected.zipCode}, India`;
       
-      const res = await createOrder({ shippingAddress: formattedAddress });
+      const res = await createOrder({ 
+        shippingAddress: formattedAddress,
+        couponId: appliedCoupon?.id 
+      });
       await clearCart();
       navigate(`/order-success/${res.data.id}`);
     } catch (err) {
@@ -184,20 +235,100 @@ const CheckoutPage = () => {
               </p>
  
               <div className="mt-8 pt-8 border-t border-gray-100">
-                <h4 className="font-black text-primary-900 tracking-tight mb-4 uppercase text-xs">Premium Summary</h4>
+                <div className="flex flex-col gap-3 mb-6 relative">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-black text-primary-900 tracking-tight uppercase text-[10px] mb-1">Promotional Code</h4>
+                    {availableCoupons.length > 0 && (
+                      <button 
+                        onClick={() => setShowOffers(!showOffers)}
+                        className="text-[10px] font-black text-accent-blue hover:underline uppercase flex items-center gap-1"
+                      >
+                        <Ticket size={10} /> View Offers
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="ENTER CODE"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all uppercase"
+                    />
+                    <button 
+                      onClick={handleApplyCoupon}
+                      disabled={isValidating || !couponCode}
+                      className="px-4 py-2 bg-primary-900 text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-primary-800 transition-all disabled:opacity-50"
+                    >
+                      {isValidating ? '...' : 'Apply'}
+                    </button>
+                  </div>
+
+                  {showOffers && availableCoupons.length > 0 && (
+                    <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-100 shadow-2xl rounded-2xl z-[60] p-4 animate-in slide-in-from-bottom-2 duration-200">
+                      <div className="flex items-center justify-between mb-3 border-b border-gray-50 pb-2">
+                        <h5 className="text-[10px] font-black text-primary-900 uppercase tracking-widest">Available Coupons</h5>
+                        <button onClick={() => setShowOffers(false)} className="text-[10px] font-black text-text-muted hover:text-red-500">✕</button>
+                      </div>
+                      <div className="space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                        {availableCoupons.map(coupon => (
+                          <div 
+                            key={coupon.id} 
+                            onClick={() => {
+                              setCouponCode(coupon.code);
+                              setShowOffers(false);
+                            }}
+                            className="p-3 bg-gray-50 rounded-xl hover:bg-accent-blue/5 border border-transparent hover:border-accent-blue/20 cursor-pointer transition-all group"
+                          >
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="text-xs font-black text-primary-900 group-hover:text-accent-blue tracking-wider">{coupon.code}</span>
+                              <span className="text-[10px] font-black text-emerald-600">
+                                {coupon.type === 'PERCENTAGE' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`}
+                              </span>
+                            </div>
+                            <p className="text-[9px] font-bold text-text-muted">Min. spend: ₹{coupon.minAmount}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {appliedCoupon && (
+                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 size={12} className="text-emerald-500" />
+                        <span className="text-[10px] font-black text-emerald-700 uppercase">{appliedCoupon.code} Applied</span>
+                      </div>
+                      <button 
+                        onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                        className="text-[10px] font-bold text-emerald-700 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <h4 className="font-black text-primary-900 tracking-tight mb-4 uppercase text-[10px]">Premium Summary</h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-text-muted font-medium"><span>Items subtotal</span><span>₹{cartTotal.toLocaleString()}</span></div>
-                  <div className="flex justify-between text-sm text-text-muted font-medium"><span>Premium Delivery</span><span className="text-green-500 font-bold">FREE</span></div>
+                  <div className="flex justify-between text-sm text-text-muted font-medium font-bold"><span>Items subtotal</span><span>₹{cartTotal.toLocaleString()}</span></div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-emerald-600 font-bold">
+                      <span>Coupon Discount</span>
+                      <span>-₹{discountAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm text-text-muted font-medium font-bold"><span>Premium Delivery</span><span className="text-green-500 font-bold">FREE</span></div>
                   <div className="flex justify-between pt-4 mt-4 border-t border-gray-100 text-primary-900">
-                    <span className="text-lg font-black">Grand Total</span>
-                    <span className="text-2xl font-black tracking-tight">₹{cartTotal.toLocaleString()}</span>
+                    <span className="text-lg font-black uppercase tracking-tighter">Grand Total</span>
+                    <span className="text-2xl font-black tracking-tighter">₹{grandTotal.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
               
               <div className="mt-8 flex justify-center opacity-40 grayscale scale-90">
                 <ShieldAlert size={16} className="text-primary-900" />
-                <span className="text-[10px] font-bold text-primary-900 ml-1">SECURE TRANSACTION CERTIFIED</span>
+                <span className="text-[10px] font-bold text-primary-900 ml-1 uppercase tracking-tighter">SECURE TRANSACTION CERTIFIED</span>
               </div>
             </div>
           </div>

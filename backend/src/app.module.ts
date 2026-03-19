@@ -13,6 +13,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { UsersModule } from './users/users.module';
 import { BannersModule } from './banners/banners.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { CouponsModule } from './coupons/coupons.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     AnalyticsModule,
     UsersModule,
     BannersModule,
+    CouponsModule,
     ReviewsModule,
   ],
   controllers: [AppController],

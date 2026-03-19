@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
-  LogOut, ShieldAlert, X, LayoutGrid, Menu, ArrowLeft, Image as ImageIcon
+  LogOut, ShieldAlert, X, LayoutGrid, Menu, ArrowLeft, Image as ImageIcon,
+  Ticket
 } from 'lucide-react';
 
 const AdminLayout = ({ children, user }) => {
@@ -31,7 +32,7 @@ const AdminLayout = ({ children, user }) => {
         <div className="flex items-center justify-between mb-10 lg:block">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-accent-blue rounded-lg flex items-center justify-center shadow-lg shadow-accent-blue/20">
-              <ShieldAlert size={20} className="text-white" />
+              < ShieldAlert size={20} className="text-white" />
             </div>
             <div className="text-xl font-bold tracking-tight">Modern<span className="text-accent-blue">Shop</span></div>
           </div>
@@ -44,6 +45,7 @@ const AdminLayout = ({ children, user }) => {
             { label: 'Dashboard', path: '/', icon: LayoutDashboard },
             { label: 'Inventory', path: '/inventory', icon: Package },
             { label: 'Banners', path: '/banners', icon: ImageIcon },
+            { label: 'Promotions', path: '/coupons', icon: Ticket },
             { label: 'Categories', path: '/categories', icon: LayoutGrid },
             { label: 'Orders', path: '/orders', icon: ShoppingCart },
             { label: 'Users', path: '/users', icon: Users },

@@ -171,6 +171,8 @@ model Coupon {
   type        CouponType
   value       Decimal
   minAmount   Decimal    @default(0)
+  usageLimit  Int?
+  usedCount   Int        @default(0)
   expiryDate  DateTime
   orders      Order[]
   createdAt   DateTime   @default(now())
