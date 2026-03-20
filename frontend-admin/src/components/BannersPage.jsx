@@ -13,12 +13,12 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';
+import { useNotification } from '../context/NotificationContext';
 
 const BannersPage = () => {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const { showNotification } = useNotification();
   
   // Modal/Form state
   const [isModalOpen, setModalOpen] = useState(false);
@@ -37,10 +37,9 @@ const BannersPage = () => {
       setLoading(true);
       const response = await api.get('/banners');
       setBanners(response.data);
-      setError(null);
     } catch (err) {
       console.error('Failed to fetch banners:', err);
-      setError('Could not load banners. Please try again later.');
+      showNotification('error', 'Could not load banners. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -70,7 +69,6 @@ const BannersPage = () => {
     }
     setSelectedFile(null);
     setModalOpen(true);
-    setError(null);
   };
 
   const handleCloseModal = () => {
@@ -78,7 +76,6 @@ const BannersPage = () => {
     setEditingBanner(null);
     setSelectedFile(null);
     setPreviewUrl('');
-    setError(null);
     setFormData({
       title: '',
       subtitle: '',
@@ -97,7 +94,6 @@ const BannersPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
 
     const data = new FormData();
     data.append('title', formData.title);
@@ -112,24 +108,23 @@ const BannersPage = () => {
         await api.patch(`/banners/${editingBanner.id}`, data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        setSuccess('Banner updated successfully!');
+        showNotification('success', 'Banner updated successfully!');
       } else {
         if (!selectedFile) {
-          setError('Please select an image file.');
+          showNotification('error', 'Please select an image file.');
           setSubmitting(false);
           return;
         }
         await api.post('/banners', data, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        setSuccess('Banner created successfully!');
+        showNotification('success', 'Banner created successfully!');
       }
       handleCloseModal();
       fetchBanners();
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Failed to save banner:', err);
-      setError(err.response?.data?.message || 'Failed to save banner. Please check your data.');
+      showNotification('error', err.response?.data?.message || 'Failed to save banner. Please check your data.');
     } finally {
       setSubmitting(false);
     }
@@ -139,13 +134,12 @@ const BannersPage = () => {
     if (!window.confirm('Are you sure you want to delete this banner?')) return;
     
     try {
-      await api.delete(`/banners/${id}`);
-      setSuccess('Banner deleted successfully!');
+      await api.delete(`/id/${id}`);
+      showNotification('success', 'Banner deleted successfully!');
       fetchBanners();
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Failed to delete banner:', err);
-      setError('Failed to delete banner.');
+      showNotification('error', 'Failed to delete banner.');
     }
   };
 
@@ -184,20 +178,6 @@ const BannersPage = () => {
           <Plus size={20} /> Add New Banner
         </button>
       </div>
-
-      {/* Alerts */}
-      {error && (
-        <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl flex items-center gap-3 animate-slide-in-top">
-          <AlertCircle size={20} />
-          <span className="font-bold text-sm tracking-tight">{error}</span>
-        </div>
-      )}
-      {success && (
-        <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-6 py-4 rounded-2xl flex items-center gap-3 animate-slide-in-top">
-          <CheckCircle2 size={20} />
-          <span className="font-bold text-sm tracking-tight">{success}</span>
-        </div>
-      )}
 
       {/* Banners Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -289,12 +269,6 @@ const BannersPage = () => {
               onSubmit={handleSubmit} 
               className="p-8 space-y-5 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent"
             >
-              {error && (
-                <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl flex items-center gap-2 animate-shake mb-4">
-                  <AlertCircle size={16} />
-                  <span className="font-bold text-xs tracking-tight">{error}</span>
-                </div>
-              )}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Banner Title</label>
                 <input

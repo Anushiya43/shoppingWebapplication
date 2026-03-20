@@ -10,6 +10,9 @@ const CartPage = () => {
   const removeItem = useCartStore(state => state.removeItem);
   const cartCount = useCartStore(state => state.getCartCount());
   const cartTotal = useCartStore(state => state.getCartTotal());
+  const shippingCost = useCartStore(state => state.getShippingCost());
+  const thresholdRemaining = useCartStore(state => state.getFreeShippingThresholdRemaining());
+  const totalWithShipping = cartTotal + shippingCost;
   const navigate = useNavigate();
 
   if (loading && !cart) {
@@ -129,9 +132,19 @@ const CartPage = () => {
         {cart?.items?.length > 0 && (
           <div className="w-full lg:w-[380px] shrink-0">
             <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 sticky top-24">
-              <div className="flex items-start gap-3 bg-indigo-50/50 p-4 rounded-2xl mb-6">
-                <CheckCircle2 size={20} className="text-accent-blue mt-0.5 shrink-0" />
-                <span className="text-[13px] text-primary-800 font-medium leading-relaxed">Your order is eligible for **FREE Premium Delivery**. Expect delivery within 24-48 hours.</span>
+              <div className={`flex items-start gap-3 p-4 rounded-2xl mb-6 transition-colors ${shippingCost === 0 ? 'bg-emerald-50/50' : 'bg-indigo-50/50'}`}>
+                {shippingCost === 0 ? (
+                  <CheckCircle2 size={20} className="text-emerald-500 mt-0.5 shrink-0" />
+                ) : (
+                  <ShoppingBag size={20} className="text-accent-blue mt-0.5 shrink-0" />
+                )}
+                <span className={`text-[13px] font-medium leading-relaxed ${shippingCost === 0 ? 'text-emerald-800' : 'text-primary-800'}`}>
+                  {shippingCost === 0 ? (
+                    <>Your order is eligible for **FREE Premium Delivery**. Expect delivery within 24-48 hours.</>
+                  ) : (
+                    <>Add **₹{thresholdRemaining.toLocaleString()}** more to your bag to unlock **FREE Premium Delivery**.</>
+                  )}
+                </span>
               </div>
               
               <div className="space-y-4 mb-8">
@@ -141,13 +154,17 @@ const CartPage = () => {
                 </div>
                 <div className="flex justify-between text-text-muted font-medium">
                   <span>Shipping</span>
-                  <span className="text-green-500 font-bold">FREE</span>
+                  {shippingCost === 0 ? (
+                    <span className="text-emerald-500 font-black tracking-widest text-[10px] uppercase bg-emerald-50 px-2 py-0.5 rounded-md">FREE</span>
+                  ) : (
+                    <span className="text-primary-900 font-bold">₹{shippingCost.toLocaleString()}</span>
+                  )}
                 </div>
                 <div className="pt-4 border-t border-gray-100 flex justify-between items-baseline">
                   <span className="text-lg font-black text-primary-900">Total</span>
                   <span className="text-3xl font-black text-primary-900 tracking-tight">
                     <span className="text-sm font-bold mr-1">₹</span>
-                    {cartTotal.toLocaleString()}
+                    {totalWithShipping.toLocaleString()}
                   </span>
                 </div>
               </div>

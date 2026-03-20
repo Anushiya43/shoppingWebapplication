@@ -20,20 +20,22 @@ const ProductCardSkeleton = () => (
 );
 
 const BannerCarousel = ({ banners }) => {
-  if (!banners || banners.length === 0) return null;
-
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStart = useRef(0);
   const touchEnd = useRef(0);
 
+  const hasBanners = banners && banners.length > 0;
+
   useEffect(() => {
-    if (isPaused) return;
+    if (!hasBanners || isPaused) return;
     const timer = setInterval(() => {
       setCurrent(prev => (prev === banners.length - 1 ? 0 : prev + 1));
     }, 5000);
     return () => clearInterval(timer);
-  }, [banners.length, isPaused]);
+  }, [banners?.length, isPaused, hasBanners]);
+
+  if (!hasBanners) return null;
 
   const next = () => setCurrent(prev => (prev === banners.length - 1 ? 0 : prev + 1));
   const prev = () => setCurrent(prev => (prev === 0 ? banners.length - 1 : prev - 1));
@@ -46,7 +48,7 @@ const BannerCarousel = ({ banners }) => {
   };
 
   return (
-    <div 
+    <div
       className="relative w-full h-[250px] sm:h-[400px] md:h-[500px] overflow-hidden group mb-6 rounded-2xl shadow-xl"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
@@ -78,8 +80,8 @@ const BannerCarousel = ({ banners }) => {
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
         {banners.map((_, i) => (
-          <button 
-            key={i} 
+          <button
+            key={i}
             onClick={() => setCurrent(i)}
             className={`transition-all duration-300 rounded-full ${current === i ? 'w-8 h-2.5 bg-accent-cyan shadow-cyan-500/50 shadow-sm' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/60'}`}
           />
@@ -102,9 +104,9 @@ const HomePage = () => {
 
   useEffect(() => {
     if (location.state) {
-        if (location.state.selectedCategory) setSelectedCategory(location.state.selectedCategory);
-        if (location.state.categoryId !== undefined) setSelectedCategoryId(location.state.categoryId);
-        if (location.state.searchQuery !== undefined) setSearchQuery(location.state.searchQuery);
+      if (location.state.selectedCategory) setSelectedCategory(location.state.selectedCategory);
+      if (location.state.categoryId !== undefined) setSelectedCategoryId(location.state.categoryId);
+      if (location.state.searchQuery !== undefined) setSearchQuery(location.state.searchQuery);
     }
   }, [location.state]);
 
@@ -113,47 +115,112 @@ const HomePage = () => {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const drawerRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  // Accessibility: Handle drawer focus and scroll lock
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      previousFocusRef.current = document.activeElement;
+      
+      // Auto-focus first button in drawer to prevent focus from staying in background
+      setTimeout(() => {
+        drawerRef.current?.querySelector('button, a')?.focus();
+      }, 50);
+
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      if (isMobileMenuOpen) {
+        document.body.style.overflow = 'unset';
+        // Delay focus restoration slightly to prevent browser conflicts
+        setTimeout(() => {
+          previousFocusRef.current?.focus();
+        }, 0);
+      }
+    };
+  }, [isMobileMenuOpen]);
+
+  // Trap focus in drawer
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isMobileMenuOpen || e.key !== 'Tab') return;
+
+      const focusableElements = drawerRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusableElements || focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (location.state) {
+      if (location.state.selectedCategory) setSelectedCategory(location.state.selectedCategory);
+      if (location.state.categoryId !== undefined) setSelectedCategoryId(location.state.categoryId);
+      if (location.state.searchQuery !== undefined) setSearchQuery(location.state.searchQuery);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     getCategories()
       .then(res => setCategories(res.data))
       .catch(err => console.error('Failed to fetch categories:', err));
-    
+
     getBanners()
       .then(res => setBanners(Array.isArray(res.data) ? res.data : []))
       .catch(err => console.error('Failed to fetch banners:', err));
   }, []);
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    setError(null);
-    const params = { limit: 20, page: 1 };
-    if (searchQuery.trim()) params.search = searchQuery.trim();
-    if (selectedCategoryId) params.categoryId = selectedCategoryId;
-
-    try {
-      const res = await getProducts(params);
-      const data = Array.isArray(res.data) ? res.data : (res.data.products || []);
-      setProducts(data);
-    } catch (err) {
-      console.error('Failed to fetch products:', err);
-      setError('Could not load products. Is the backend running?');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      const params = { limit: 20, page: 1 };
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (selectedCategoryId) params.categoryId = selectedCategoryId;
+
+      try {
+        const res = await getProducts(params);
+        const data = Array.isArray(res.data) ? res.data : (res.data.products || []);
+        setProducts(data);
+      } catch (err) {
+        console.error('Failed to fetch products:', err);
+        setError('Could not load products. Is the backend running?');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const timer = setTimeout(() => {
       fetchProducts();
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedCategoryId]);
+  }, [searchQuery, selectedCategoryId, getProducts]);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
-    fetchProducts();
+    // No need to manually call fetchProducts, dependency array will trigger it
   };
 
   const handleCategorySelect = (cat) => {
@@ -166,27 +233,34 @@ const HomePage = () => {
     }
   };
 
-  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-surface-bg text-text-main font-sans selection:bg-accent-blue selection:text-white">
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} />
 
       {/* Mobile Category Drawer */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[200] flex animate-fade-in">
+        <div 
+          className="fixed inset-0 z-[200] flex animate-fade-in"
+          role="presentation"
+        >
           <div className="absolute inset-0 bg-primary-900/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-          <div className="relative z-10 w-4/5 max-w-xs bg-white h-full flex flex-col shadow-[20px_0_60px_-15px_rgba(0,0,0,0.3)] animate-slide-in-left">
+          <div 
+            ref={drawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="drawer-title"
+            className="relative z-10 w-4/5 max-w-xs bg-white h-full flex flex-col shadow-[20px_0_60px_-15px_rgba(0,0,0,0.3)] animate-slide-in-left"
+          >
             <div className="bg-primary-900 text-white px-6 py-8 flex flex-col gap-4">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-blue to-accent-pink flex items-center justify-center text-2xl font-black shadow-lg">
                 {user ? user.firstName?.[0]?.toUpperCase() : '?'}
               </div>
               <div>
-                <div className="text-sm text-cyan-200 font-medium">Welcome back,</div>
-                <div className="font-bold text-2xl tracking-tight truncate">{user ? user.firstName : 'Sign in'}</div>
+                <div className="text-sm text-cyan-200 font-medium tracking-tight">Welcome back,</div>
+                <div id="drawer-title" className="font-bold text-2xl tracking-tight truncate">{user ? user.firstName : 'Sign in'}</div>
               </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto">
               <div className="px-5 py-4 border-b border-gray-200">
                 <h3 className="font-bold text-lg mb-3">Shop by Category</h3>
@@ -206,12 +280,18 @@ const HomePage = () => {
                   </button>
                 ))}
               </div>
-              
+
               <div className="px-5 py-4">
                 <h3 className="font-bold text-lg mb-3">Help & Settings</h3>
                 {user ? (
-                  <button onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="w-full text-left px-4 py-3 text-[15px] font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                  <button 
+                    key="sign-out-btn"
+                    onClick={() => { 
+                      logout(); 
+                      setMobileMenuOpen(false); 
+                    }}
+                    className="w-full text-left px-4 py-3 text-[15px] font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                  >
                     Sign Out
                   </button>
                 ) : (
@@ -226,7 +306,7 @@ const HomePage = () => {
         </div>
       )}
 
-      <Header 
+      <Header
         categories={categories}
         selectedCategory={selectedCategory}
         onCategorySelect={handleCategorySelect}
@@ -239,27 +319,29 @@ const HomePage = () => {
 
       {/* Main Content */}
       <main className="max-w-[1500px] mx-auto pb-20 md:pb-10 pt-4 px-4 sm:px-6">
-        
+
         {/* Banner Section */}
         {!searchQuery && selectedCategory === 'All' && <BannerCarousel banners={banners} />}
 
         <div className="pt-2">
           {/* Section Title */}
           <div className="flex items-center justify-between mb-6 px-1">
-            <h2 className="text-xl sm:text-2xl font-extrabold flex items-center gap-2">
-              {searchQuery ? (
-                <>
+            <h2 key={searchQuery || selectedCategory} className="text-xl sm:text-2xl font-extrabold flex items-center gap-2">
+              {searchQuery && (
+                <span key="search-title" className="flex items-center gap-2">
                   <span className="text-primary-900">"{searchQuery}"</span>
                   <span className="text-text-muted font-normal text-lg">Results</span>
-                </>
-              ) : selectedCategory !== 'All' ? (
-                <span className="text-primary-900">{selectedCategory}</span>
-              ) : (
-                <span className="text-primary-900">New Arrivals</span>
+                </span>
+              )}
+              {!searchQuery && selectedCategory !== 'All' && (
+                <span key="category-title" className="text-primary-900">{selectedCategory}</span>
+              )}
+              {!searchQuery && selectedCategory === 'All' && (
+                <span key="default-title" className="text-primary-900">New Arrivals</span>
               )}
             </h2>
             {!loading && (
-              <span className="text-xs sm:text-sm text-gray-500">
+              <span key="count" className="text-xs sm:text-sm text-gray-500">
                 {products.length} item{products.length !== 1 ? 's' : ''}
               </span>
             )}
@@ -275,23 +357,26 @@ const HomePage = () => {
           )}
 
           {/* Products Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-            {loading
-              ? Array.from({ length: 10 }).map((_, i) => <ProductCardSkeleton key={i} />)
-              : products.length > 0
-                ? products.map(product => <ProductCard key={product.id} product={product} />)
-                : !error && (
-                  <div className="col-span-full bg-white rounded-3xl p-16 text-center border-2 border-dashed border-gray-100">
-                    <Package size={60} className="text-gray-200 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-primary-900 mb-2">No products found</h3>
-                    <p className="text-text-muted text-base max-w-sm mx-auto">
-                      {searchQuery
-                        ? `We couldn't find anything matching "${searchQuery}". Try different keywords.`
-                        : 'Our inventory is temporarily empty. Check back soon for exciting new products!'}
-                    </p>
-                  </div>
-                )
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 min-h-[400px]">
+            {loading &&
+              Array.from({ length: 10 }).map((_, i) => <ProductCardSkeleton key={`skeleton-${i}`} />)
             }
+
+            {!loading && products.length > 0 &&
+              products.map(product => <ProductCard key={product.id} product={product} />)
+            }
+
+            {!loading && products.length === 0 && !error && (
+              <div key="empty-state" className="col-span-full bg-white rounded-3xl p-16 text-center border-2 border-dashed border-gray-100">
+                <Package size={60} className="text-gray-200 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-primary-900 mb-2">No products found</h3>
+                <p className="text-text-muted text-base max-w-sm mx-auto">
+                  {searchQuery
+                    ? `We couldn't find anything matching "${searchQuery}". Try different keywords.`
+                    : 'Our inventory is temporarily empty. Check back soon for exciting new products!'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </main>

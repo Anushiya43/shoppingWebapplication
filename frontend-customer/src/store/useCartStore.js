@@ -9,7 +9,9 @@ const useCartStore = create(
       loading: false,
 
       fetchCart: async () => {
-        const accessToken = localStorage.getItem('access_token');
+        const authData = localStorage.getItem('modern-shop-auth');
+        const accessToken = authData ? JSON.parse(authData).state?.accessToken : null;
+        
         if (!accessToken) {
           set({ cart: null, loading: false });
           return;
@@ -78,6 +80,18 @@ const useCartStore = create(
               : item.product.price;
           return acc + (discountedPrice * item.quantity);
         }, 0) || 0;
+      },
+      
+      getShippingCost: () => {
+        const total = get().getCartTotal();
+        if (total === 0) return 0;
+        return total >= 500 ? 0 : 50;
+      },
+      
+      getFreeShippingThresholdRemaining: () => {
+        const total = get().getCartTotal();
+        if (total === 0 || total >= 500) return 0;
+        return 500 - total;
       },
     }),
     {

@@ -5,6 +5,7 @@ import {
   Banknote, Info, BarChart3
 } from 'lucide-react';
 import { getCoupons, createCoupon, updateCoupon, deleteCoupon, getCouponAnalytics } from '../api/coupons';
+import { useNotification } from '../context/NotificationContext';
 
 const CouponsPage = () => {
     const [coupons, setCoupons] = useState([]);
@@ -22,7 +23,7 @@ const CouponsPage = () => {
       expiryDate: '' 
     });
     const [submitting, setSubmitting] = useState(false);
-    const [notification, setNotification] = useState(null);
+    const { showNotification } = useNotification();
     const [searchTerm, setSearchTerm] = useState('');
     const [errors, setErrors] = useState({});
 
@@ -53,11 +54,6 @@ const CouponsPage = () => {
         } finally {
             setLoadingAnalytics(false);
         }
-    };
-
-    const showNotification = (type, message) => {
-        setNotification({ type, message });
-        setTimeout(() => setNotification(null), 3000);
     };
 
     const validateForm = () => {
@@ -201,18 +197,6 @@ const CouponsPage = () => {
                     </>
                 )}
             </div>
-
-            {/* Notification */}
-            {notification && (
-                <div className={`fixed top-6 right-6 z-[300] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 border ${
-                    notification.type === 'success' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                        : 'bg-red-50 text-red-700 border-red-100'
-                    }`}>
-                    {notification.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                    <div className="text-sm font-semibold">{notification.message}</div>
-                </div>
-            )}
 
             {/* Content Strip */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">

@@ -5,10 +5,13 @@ import {
 } from 'lucide-react';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../api/products';
 import { getCategories } from '../api/categories';
+import { getBrands } from '../api/brands';
+import { useNotification } from '../context/NotificationContext';
 
 const InventoryPage = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState(null);
@@ -22,12 +25,13 @@ const InventoryPage = () => {
         stock: '',
         minStock: '5',
         categoryId: '',
+        brandId: '',
     });
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previewUrls, setPreviewUrls] = useState([]);
 
     const [submitting, setSubmitting] = useState(false);
-    const [notification, setNotification] = useState(null);
+    const { showNotification } = useNotification();
     const [filters, setFilters] = useState({ search: '', categoryId: '', page: 1 });
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -48,24 +52,20 @@ const InventoryPage = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [prodRes, catRes] = await Promise.all([
+            const [prodRes, catRes, brandRes] = await Promise.all([
                 getProducts(filters),
-                getCategories()
+                getCategories(),
+                getBrands()
             ]);
             setProducts(prodRes.data.products);
             setMeta(prodRes.data.meta);
             setCategories(catRes.data);
+            setBrands(brandRes.data);
         } catch (err) {
             showNotification('error', err.response?.data?.message || 'Failed to fetch data');
         } finally {
             setLoading(false);
         }
-    };
-
-    const showNotification = (type, message) => {
-        setNotification({ type, message });
-        const duration = type === 'error' ? 5000 : 3000;
-        setTimeout(() => setNotification(null), duration);
     };
 
     const handleFileChange = (e) => {
@@ -112,7 +112,10 @@ const InventoryPage = () => {
         setSubmitting(true);
         try {
             const data = new FormData();
-            Object.keys(formData).forEach(key => data.append(key, formData[key]));
+            Object.keys(formData).forEach(key => {
+                if (key === 'brandId' && !formData[key]) return;
+                data.append(key, formData[key]);
+            });
             
             // Append multiple files
             selectedFiles.forEach(file => {
@@ -162,6 +165,7 @@ const InventoryPage = () => {
                 stock: product.stock,
                 minStock: product.minStock || '5',
                 categoryId: product.categoryId,
+                brandId: product.brandId || '',
             });
             // Handle existing images
             const existingImages = product.images?.map(img => img.url) || [product.imageUrl];
@@ -176,6 +180,7 @@ const InventoryPage = () => {
                 stock: '',
                 minStock: '5',
                 categoryId: categories[0]?.id || '',
+                brandId: '',
             });
             setPreviewUrls([]);
         }
@@ -206,18 +211,6 @@ const InventoryPage = () => {
                     <Plus size={18} /> Add Product
                 </button>
             </div>
-
-            {/* Notification */}
-            {notification && (
-                <div className={`fixed top-6 right-6 z-[300] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 border ${
-                    notification.type === 'success' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                        : 'bg-red-50 text-red-700 border-red-100'
-                    }`}>
-                    {notification.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                    <div className="text-sm font-semibold">{notification.message}</div>
-                </div>
-            )}
 
             {/* Filters & Search */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
@@ -252,6 +245,7 @@ const InventoryPage = () => {
                             <tr className="bg-slate-50 border-b border-slate-200">
                                 <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Product Details</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Category</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-center">Brand</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Price</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Stock</th>
                                 <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
@@ -294,6 +288,15 @@ const InventoryPage = () => {
                                         <span className="px-2.5 py-1 bg-slate-100 text-text-muted rounded-md text-[10px] font-bold uppercase tracking-wider border border-slate-200">
                                             {prod.category?.name || 'Uncategorized'}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        {prod.brand ? (
+                                            <span className="px-2.5 py-1 bg-accent-blue/5 text-accent-blue rounded-md text-[10px] font-bold uppercase tracking-wider border border-accent-blue/10">
+                                                {prod.brand.name}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] font-bold text-slate-300 uppercase italic">No Brand</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
@@ -469,6 +472,18 @@ const InventoryPage = () => {
                                             {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                                         </select>
                                         {errors.categoryId && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.categoryId}</p>}
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-text-muted ml-0.5">Brand (Optional)</label>
+                                        <select
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-medium cursor-pointer"
+                                            value={formData.brandId}
+                                            onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+                                        >
+                                            <option value="">No Brand</option>
+                                            {brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                                        </select>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">

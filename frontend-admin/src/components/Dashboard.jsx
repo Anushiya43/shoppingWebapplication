@@ -12,6 +12,7 @@ import UserManagementPage from './UserManagementPage';
 import DashboardHome from './dashboard/DashboardHome';
 import BannersPage from './BannersPage';
 import CouponsPage from './CouponsPage';
+import BrandsPage from './BrandsPage';
 
 const Dashboard = () => {
   // 1. ALL HOOKS AT THE VERY TOP (STABLE ORDER)
@@ -141,14 +142,15 @@ const Dashboard = () => {
         </div>
       ) : (
         /* Case 4: Authorized Admin Access */
-        <AdminLayout>
-          {currentPath === '/' && <DashboardHome />}
-          {currentPath === '/categories' && <CategoriesPage />}
-          {currentPath === '/inventory' && <InventoryPage />}
-          {currentPath === '/orders' && <OrdersManagementPage />}
-          {currentPath === '/users' && <UserManagementPage />}
-          {currentPath === '/banners' && <BannersPage />}
-          {currentPath === '/coupons' && <CouponsPage />}
+        <AdminLayout key="admin-layout">
+          {currentPath === '/' && <DashboardHome key="home" />}
+          {currentPath === '/brands' && <BrandsPage key="brands" />}
+          {currentPath === '/categories' && <CategoriesPage key="categories" />}
+          {currentPath === '/inventory' && <InventoryPage key="inventory" />}
+          {currentPath === '/orders' && <OrdersManagementPage key="orders" />}
+          {currentPath === '/users' && <UserManagementPage key="users" />}
+          {currentPath === '/banners' && <BannersPage key="banners" />}
+          {currentPath === '/coupons' && <CouponsPage key="coupons" />}
         </AdminLayout>
       )}
     </div>

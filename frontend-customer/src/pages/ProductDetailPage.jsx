@@ -156,15 +156,30 @@ const ProductDetailPage = () => {
           <div className="lg:col-span-5 flex flex-col pt-2">
             <div className="mb-10">
               <div className="flex items-center justify-between mb-6">
-                <span className="px-4 py-1.5 bg-slate-900/5 text-primary-900 text-[10px] font-black uppercase tracking-[0.15em] rounded-full border border-slate-900/5">
-                  Handpicked
-                </span>
                 <div className="flex items-center gap-2">
                   <div className="flex text-amber-400">
-                    {[1, 2, 3, 4, 5].map(s => <Star key={s} size={12} fill={s <= 4 ? "currentColor" : "none"} />)}
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <Star 
+                        key={s} 
+                        size={12} 
+                        fill={s <= Math.round(product.reviews?.reduce((acc, r) => acc + r.rating, 0) / (product.reviews?.length || 1)) && product.reviews?.length > 0 ? "currentColor" : "none"} 
+                        className={s <= Math.round(product.reviews?.reduce((acc, r) => acc + r.rating, 0) / (product.reviews?.length || 1)) && product.reviews?.length > 0 ? "" : "text-slate-200"}
+                      />
+                    ))}
                   </div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">(2.4k reviews)</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {product.reviews?.length > 0 ? `(${product.reviews?.length} reviews)` : 'Be the first to review'}
+                  </span>
                 </div>
+              </div>
+
+              <div 
+                key="brand-detail" 
+                className={`mb-2 ${!product.brand ? 'hidden' : ''}`}
+              >
+                <span className="text-[11px] font-black text-accent-cyan uppercase tracking-[0.25em]">
+                  {product.brand?.name}
+                </span>
               </div>
 
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-primary-900 mb-6 leading-[1.05] tracking-tight">
@@ -191,7 +206,7 @@ const ProductDetailPage = () => {
               <div className="space-y-4">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">The Experience</h3>
                 <p className="text-slate-600 leading-relaxed font-medium text-base">
-                  {product.description || "An exceptional fusion of modern aesthetics and unparalleled craftsmanship. Designed to elevate your everyday experience with premium materials and sophisticated detail."}
+                  {product.description}
                 </p>
               </div>
             </div>
@@ -285,7 +300,8 @@ const ProductDetailPage = () => {
                         <Star 
                           key={s} 
                           size={16} 
-                          fill={s <= Math.round(product.reviews?.reduce((acc, r) => acc + r.rating, 0) / product.reviews?.length || 0) ? "currentColor" : "none"} 
+                          fill={s <= Math.round(product.reviews?.reduce((acc, r) => acc + r.rating, 0) / (product.reviews?.length || 1)) && product.reviews?.length > 0 ? "currentColor" : "none"} 
+                          className={s <= Math.round(product.reviews?.reduce((acc, r) => acc + r.rating, 0) / (product.reviews?.length || 1)) && product.reviews?.length > 0 ? "" : "text-slate-200"}
                         />
                       ))}
                     </div>

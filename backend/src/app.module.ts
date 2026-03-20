@@ -14,6 +14,7 @@ import { UsersModule } from './users/users.module';
 import { BannersModule } from './banners/banners.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { CouponsModule } from './coupons/coupons.module';
+import { BrandsModule } from './brands/brands.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CouponsModule } from './coupons/coupons.module';
     BannersModule,
     CouponsModule,
     ReviewsModule,
+    BrandsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

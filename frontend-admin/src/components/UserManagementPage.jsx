@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, ShieldAlert, ShieldCheck, UserX, UserCheck, Mail, Phone, Calendar } from 'lucide-react';
 import { getUsers, toggleBlockUser } from '../api/users';
 import useAuthStore from '../store/useAuthStore';
+import { useNotification } from '../context/NotificationContext';
 
 const UserManagementPage = () => {
     const { user: currentAdmin } = useAuthStore();
@@ -10,7 +11,7 @@ const UserManagementPage = () => {
     const [error, setError] = useState(null);
     const [statusFilter, setStatusFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [notification, setNotification] = useState(null);
+    const { showNotification } = useNotification();
     const [blockingId, setBlockingId] = useState(null);
 
     const fetchUsers = async () => {
@@ -30,11 +31,6 @@ const UserManagementPage = () => {
     useEffect(() => {
         fetchUsers();
     }, []);
-
-    const showNotification = (type, message) => {
-        setNotification({ type, message });
-        setTimeout(() => setNotification(null), 3000);
-    };
 
     const handleToggleBlock = async (user) => {
         if (user.id === currentAdmin.id) {
@@ -80,18 +76,6 @@ const UserManagementPage = () => {
                     <p className="text-text-muted text-sm font-medium">Manage platform users and account access.</p>
                 </div>
             </div>
-
-            {/* Notification */}
-            {notification && (
-                <div className={`fixed top-6 right-6 z-[300] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 border ${
-                    notification.type === 'success' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                        : 'bg-red-50 text-red-700 border-red-100'
-                    }`}>
-                    {notification.type === 'success' ? <ShieldCheck size={20} /> : <ShieldAlert size={20} />}
-                    <div className="text-sm font-semibold">{notification.message}</div>
-                </div>
-            )}
 
             {/* Filters */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">

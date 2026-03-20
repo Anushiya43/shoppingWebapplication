@@ -13,6 +13,11 @@ export class OrdersService {
     private couponsService: CouponsService,
   ) {}
 
+  private calculateShipping(totalAmount: number): number {
+    if (totalAmount === 0) return 0;
+    return totalAmount >= 500 ? 0 : 50;
+  }
+
   async createOrder(userId: string, createOrderDto: CreateOrderDto): Promise<Order> {
     const cart = await this.cartService.getCart(userId);
 
@@ -82,7 +87,8 @@ export class OrdersService {
       }
     }
 
-    const finalAmount = Math.max(0, totalAmount - discountAmount);
+    const shippingCost = this.calculateShipping(totalAmount);
+    const finalAmount = Math.max(0, totalAmount - discountAmount + shippingCost);
 
     // Atomic Transaction
     return this.prisma.$transaction(async (tx) => {
@@ -90,6 +96,7 @@ export class OrdersService {
         data: {
           userId,
           totalAmount: new Prisma.Decimal(finalAmount),
+          shippingCost: new Prisma.Decimal(shippingCost),
           discountAmount: new Prisma.Decimal(discountAmount),
           couponId: createOrderDto.couponId,
           shippingAddress: createOrderDto.shippingAddress,

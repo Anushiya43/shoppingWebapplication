@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../../context/NotificationContext';
 import { Package, BarChart3, AlertCircle, TrendingUp, Users, ShoppingBag, Target, Star, MoreHorizontal } from 'lucide-react';
 import { getStats } from '../../api/analytics';
 import { 
@@ -29,7 +30,7 @@ const DashboardHome = () => {
     avgOrderValue: 0 
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     fetchDashboardData();
@@ -79,10 +80,9 @@ const DashboardHome = () => {
         repeatCustomerRate: data.repeatCustomerRate || 0,
         avgOrderValue: data.avgOrderValue || 0
       });
-      setError(null);
     } catch (err) {
       console.error('Failed to fetch dashboard stats:', err);
-      setError('Failed to load real-time analytics');
+      showNotification('error', 'Failed to load real-time analytics');
     } finally {
       setLoading(false);
     }
@@ -92,13 +92,6 @@ const DashboardHome = () => {
   return (
     <div className="animate-in fade-in duration-500 pb-20 text-left">
       {/* Stats Grid */}
-      {error && (
-        <div className="mb-8 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-600 animate-in slide-in-from-top-4">
-          <AlertCircle size={20} />
-          <p className="text-sm font-bold">{error}</p>
-          <button onClick={fetchDashboardData} className="ml-auto text-xs underline font-bold">Retry</button>
-        </div>
-      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {stats.map((stat, i) => (
