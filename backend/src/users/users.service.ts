@@ -48,4 +48,26 @@ export class UsersService {
       },
     });
   }
+
+  async updateProfile(id: string, data: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+      },
+    });
+  }
 }

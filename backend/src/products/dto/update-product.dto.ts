@@ -28,6 +28,12 @@ export class UpdateProductDto {
   @Min(0)
   stock?: number;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minStock?: number;
+
   @IsString()
   @IsOptional()
   categoryId?: string;

@@ -21,6 +21,7 @@ export class ProductsService {
           price: new Prisma.Decimal(productData.price),
           discountPercentage: new Prisma.Decimal(productData.discountPercentage || 0),
           stock: Number(productData.stock),
+          minStock: productData.minStock !== undefined ? Number(productData.minStock) : undefined,
           images: {
             create: imageGallery?.map(url => ({ url })) || []
           }
@@ -116,6 +117,7 @@ export class ProductsService {
           ...productData,
           price: productData.price !== undefined ? new Prisma.Decimal(productData.price) : undefined,
           stock: productData.stock !== undefined ? Number(productData.stock) : undefined,
+          minStock: productData.minStock !== undefined ? Number(productData.minStock) : undefined,
           discountPercentage: productData.discountPercentage !== undefined ? new Prisma.Decimal(productData.discountPercentage) : undefined,
           ...(imageGallery && {
             images: {
