@@ -1,5 +1,5 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import useAuthStore from './store/useAuthStore';
 import useCartStore from './store/useCartStore';
 
@@ -20,11 +20,13 @@ import ProfilePage from './pages/ProfilePage';
 import AddressManagement from './pages/AddressManagement';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
+// AuthSuccess removed in favor of direct store tokens if needed,
+// but keeping it simple for now if the user actually uses it for redirect flows.
+// The persist middleware handles the tokens now.
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams();
   const setTokens = useAuthStore(state => state.setTokens);
   const initAuth = useAuthStore(state => state.initAuth);
-  const fetchCart = useCartStore(state => state.fetchCart);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,48 +36,57 @@ const AuthSuccess = () => {
 
     if (accessToken && refreshToken) {
       setTokens(accessToken, refreshToken, userId);
-      // Use initAuth and fetchCart instead of refresh
-      const syncAuth = async () => {
-        await initAuth();
-        await fetchCart();
-        navigate('/');
-      };
-      syncAuth();
+      initAuth().then(() => navigate('/'));
     }
-  }, [searchParams, setTokens, initAuth, fetchCart, navigate]);
+  }, [searchParams, setTokens, initAuth, navigate]);
 
-  return <div className="min-h-screen flex items-center justify-center">Logging you in...</div>;
+  return <div className="min-h-screen flex items-center justify-center">Authenticating...</div>;
 };
 
 function App() {
-  const initAuth = useAuthStore(state => state.initAuth);
+  const { initAuth, loading, user } = useAuthStore();
   const fetchCart = useCartStore(state => state.fetchCart);
 
   useEffect(() => {
-    const init = async () => {
-      await initAuth();
-      await fetchCart();
-    };
-    init();
-  }, [initAuth, fetchCart]);
+    initAuth();
+  }, [initAuth]);
+
+  // Fetch cart separately bits by bits after auth is ready or if user exists
+  useEffect(() => {
+    if (user) {
+      fetchCart();
+    }
+  }, [user, fetchCart]);
 
   return (
     <NotificationProvider>
       <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/auth-success" element={<AuthSuccess />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-          <Route path="/order-success/:orderId" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
-          <Route path="/product/:id" element={<ProductDetailPage />} />
-          <Route path="/orders/:id/track" element={<ProtectedRoute><OrderTrackingPage /></ProtectedRoute>} />
-          <Route path="/offers" element={<OffersPage />} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/addresses" element={<ProtectedRoute><AddressManagement /></ProtectedRoute>} />
-        </Routes>
+        {loading ? (
+          <div key="loading-barrier" className="min-h-screen flex items-center justify-center bg-surface-bg flex-col gap-6 p-8 text-center animate-in fade-in duration-500">
+            <div className="w-16 h-16 border-[5px] border-primary-900/5 border-t-accent-blue rounded-full animate-spin"></div>
+            <div className="space-y-2">
+              <p className="font-black text-primary-900 uppercase tracking-[0.2em] text-xs">Modern Shop</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Restoring Secure Session...</p>
+            </div>
+          </div>
+        ) : (
+          <React.Suspense fallback={null}>
+            <Routes key={user ? 'auth' : 'guest'}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/auth-success" element={<AuthSuccess />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+              <Route path="/order-success/:orderId" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
+              <Route path="/product/:id" element={<ProductDetailPage />} />
+              <Route path="/orders/:id/track" element={<ProtectedRoute><OrderTrackingPage /></ProtectedRoute>} />
+              <Route path="/offers" element={<OffersPage />} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+              <Route path="/addresses" element={<ProtectedRoute><AddressManagement /></ProtectedRoute>} />
+            </Routes>
+          </React.Suspense>
+        )}
       </Router>
     </NotificationProvider>
   );

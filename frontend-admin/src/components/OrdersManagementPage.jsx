@@ -6,11 +6,12 @@ import {
   Eye, MoreVertical, ExternalLink, Download,
   Calendar as CalendarIcon, RotateCcw
 } from 'lucide-react';
+import { useNotification } from '../context/NotificationContext';
 
 const OrdersManagementPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { showNotification } = useNotification();
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -24,7 +25,7 @@ const OrdersManagementPage = () => {
             setOrders(res.data);
         } catch (err) {
             console.error('Failed to fetch orders:', err);
-            setError('Failed to load orders. Please check if the backend is running.');
+            showNotification('error', 'Failed to load orders. Please check if the backend is running.');
         } finally {
             setLoading(false);
         }
@@ -48,9 +49,10 @@ const OrdersManagementPage = () => {
             if (selectedOrder && selectedOrder.id === orderId) {
                 setSelectedOrder({ ...selectedOrder, ...updateData });
             }
+            showNotification('success', 'Order status updated successfully');
         } catch (err) {
             console.error('Failed to update status:', err);
-            alert('Failed to update order status');
+            showNotification('error', err.response?.data?.message || 'Failed to update order status');
         }
     };
 
@@ -206,12 +208,6 @@ const OrdersManagementPage = () => {
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <div className="animate-spin w-8 h-8 border-4 border-accent-blue border-t-transparent rounded-full"></div>
-                </div>
-            ) : error ? (
-                <div className="p-8 bg-red-50 text-red-600 rounded-xl text-center border border-red-100">
-                    <XCircle size={32} className="mx-auto mb-3 opacity-50" />
-                    <p className="font-semibold text-sm">{error}</p>
-                    <button onClick={fetchOrders} className="mt-4 text-xs font-bold underline hover:text-red-700 transition-colors">Try Again</button>
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

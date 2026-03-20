@@ -63,6 +63,7 @@ export class ProductsService {
         where,
         include: { 
           category: true,
+          brand: true,
           images: true 
         },
         skip,
@@ -88,6 +89,7 @@ export class ProductsService {
       where: { id, isDeleted: false },
       include: {
         category: true,
+        brand: true,
         images: true,
       },
     });

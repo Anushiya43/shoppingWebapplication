@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, ShoppingCart } from 'lucide-react';
+import { Package, ShoppingCart, Star } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import useCartStore from '../../store/useCartStore';
 import { useNotification } from '../../context/NotificationContext';
@@ -21,6 +21,12 @@ const ProductCard = ({ product }) => {
   const currentQuantityInCart = cartItem ? cartItem.quantity : 0;
   const isOutOfStock = product.stock === 0;
   const isAtMaxStock = currentQuantityInCart >= product.stock;
+
+  const reviews = product.reviews || [];
+  const reviewCount = reviews.length;
+  const averageRating = reviewCount > 0
+    ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount
+    : 0;
 
   const handleAddToCart = async (e) => {
     e.stopPropagation();
@@ -72,14 +78,29 @@ const ProductCard = ({ product }) => {
         {product.name}
       </div>
 
+      {/* Brand */}
+      <div 
+        key="brand-display" 
+        className={`text-[10px] font-black text-accent-blue uppercase tracking-[0.15em] mb-2 px-1 ${!product.brand ? 'hidden' : ''}`}
+      >
+        {product.brand?.name}
+      </div>
+
       {/* Star Rating */}
       <div className="flex items-center gap-1.5 mb-3">
-        <div className="flex text-accent-cyan">
+        <div className="flex text-amber-400">
           {[1, 2, 3, 4, 5].map(s => (
-            <span key={s} className="text-xs">★</span>
+            <Star 
+              key={s} 
+              size={12} 
+              fill={s <= Math.round(averageRating) ? "currentColor" : "none"} 
+              className={s <= Math.round(averageRating) ? "" : "text-slate-200"}
+            />
           ))}
         </div>
-        <span className="text-text-muted text-[11px] font-medium">({product.id.slice(-3)})</span>
+        <span className="text-text-muted text-[11px] font-bold uppercase tracking-tight">
+          {reviewCount > 0 ? `(${reviewCount})` : 'No reviews yet'}
+        </span>
       </div>
 
       {/* Pricing */}

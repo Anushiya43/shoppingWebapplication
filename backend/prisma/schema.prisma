@@ -58,6 +58,8 @@ model Product {
   minStock           Int         @default(5)
   categoryId         String
   category           Category    @relation(fields: [categoryId], references: [id])
+  brandId            String?
+  brand              Brand?       @relation(fields: [brandId], references: [id])
   imageUrl           String
   images             ProductImage[]
   orderItems         OrderItem[]
@@ -100,6 +102,18 @@ model Category {
   deletedAt   DateTime?
 }
 
+model Brand {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  logoUrl     String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+}
+
 model Order {
   id              String      @id @default(uuid())
   userId          String
@@ -109,6 +123,7 @@ model Order {
   status          OrderStatus @default(PENDING)
   shippingAddress String?
   trackingNumber  String?
+  shippingCost    Decimal     @default(0)
   discountAmount  Decimal     @default(0)
   totalAmount     Decimal
   orderItems      OrderItem[]

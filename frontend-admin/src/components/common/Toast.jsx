@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, X, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 const Toast = ({ message, type = 'info', onClose }) => {
   useEffect(() => {
@@ -41,7 +41,7 @@ const Toast = ({ message, type = 'info', onClose }) => {
   const style = colors[type] || colors.info;
 
   return (
-    <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[1000] animate-in slide-in-from-top-10 fade-in duration-500">
+    <div className="fixed top-6 right-6 z-[2000] animate-in slide-in-from-right-10 fade-in duration-500">
       <div className={`flex items-center gap-4 px-6 py-4 rounded-2xl border ${style.border} shadow-2xl ${style.shadow} ${style.bg} min-w-[320px] max-w-md backdrop-blur-md`}>
         <div className="shrink-0 scale-110">{style.icon}</div>
         <p className={`text-[15px] font-black ${style.text} leading-tight flex-1`}>{message}</p>

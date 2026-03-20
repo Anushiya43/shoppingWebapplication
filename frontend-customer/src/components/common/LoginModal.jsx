@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ArrowLeft, ShieldAlert } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import Alert from '../common/Alert';
@@ -15,6 +15,63 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [isNewUser, setIsNewUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement;
+      
+      // Auto-focus the close button or first input for accessibility
+      // Delay slightly for React 19 stability
+      setTimeout(() => {
+         modalRef.current?.querySelector('button, input')?.focus();
+      }, 50);
+
+      // Lock scroll
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      if (isOpen) {
+        document.body.style.overflow = 'unset';
+        // Delay focus restoration
+        setTimeout(() => {
+          previousFocusRef.current?.focus();
+        }, 0);
+      }
+    };
+  }, [isOpen]);
+
+  // Trap focus
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isOpen || e.key !== 'Tab') return;
+
+      const focusableElements = modalRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusableElements || focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -48,9 +105,24 @@ const LoginModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-sm rounded-[4px] shadow-lg relative overflow-hidden border border-gray-300">
-        <button onClick={onClose} className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded transition-colors text-gray-500">
+    <div 
+      className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div 
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-modal-title"
+        className="bg-white w-full max-w-sm rounded-[4px] shadow-lg relative overflow-hidden border border-gray-300 animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose} 
+          aria-label="Close modal"
+          className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded transition-colors text-gray-500"
+        >
           <X size={18} />
         </button>
 
@@ -59,12 +131,13 @@ const LoginModal = ({ isOpen, onClose }) => {
             {(step === 'phone' || step === 'otp') && (
               <button 
                 onClick={() => setStep(step === 'otp' ? 'phone' : 'choice')}
+                aria-label="Go back"
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors -ml-2"
               >
                 <ArrowLeft size={20} />
               </button>
             )}
-            <h2 className="text-2xl font-normal text-amazon-text">
+            <h2 id="login-modal-title" className="text-2xl font-normal text-amazon-text">
               {step === 'otp' && isNewUser ? 'Create account' : 'Sign in'}
             </h2>
           </div>
