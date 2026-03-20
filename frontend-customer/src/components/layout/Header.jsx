@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, MapPin, Search, ShoppingCart, ChevronDown, Package } from 'lucide-react';
+import { Menu, MapPin, Search, ShoppingCart, ChevronDown, Package, Ticket } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import useCartStore from '../../store/useCartStore';
 
@@ -160,6 +160,12 @@ const Header = ({
         >
           All Categories
         </button>
+        <Link
+          to="/offers"
+          className="px-3 py-1.5 rounded-full transition-all shrink-0 text-white font-black flex items-center gap-1.5 bg-gradient-to-r from-accent-pink to-accent-blue hover:shadow-lg active:scale-95"
+        >
+          <Ticket size={14} /> Promotions
+        </Link>
         {categories?.map(cat => (
           <button
             key={cat.id}

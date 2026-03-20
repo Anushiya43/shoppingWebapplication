@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Ba
 import { CouponsService } from './coupons.service';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { UpdateCouponDto } from './dto/update-coupon.dto';
+import { ValidateCouponDto } from './dto/validate-coupon.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -30,13 +31,17 @@ export class CouponsController {
     return this.couponsService.findAll();
   }
 
+  @Get('analytics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getAnalytics() {
+    return this.couponsService.getAnalytics();
+  }
+
   @Get('validate/:code')
   @UseGuards(JwtAuthGuard)
-  async validate(@Param('code') code: string, @Query('amount') amount: string, @Req() req: any) {
-    if (!amount) {
-      throw new BadRequestException('Amount is required for validation');
-    }
-    return this.couponsService.validateCoupon(code, parseFloat(amount), req.user.id);
+  async validate(@Param('code') code: string, @Query() query: ValidateCouponDto, @Req() req: any) {
+    return this.couponsService.validateCoupon(code, parseFloat(query.amount), req.user.id);
   }
 
   @Get(':id')

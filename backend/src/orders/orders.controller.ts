@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Param, Body, UseGuards, Req } from '@nestjs
 import { AuthGuard } from '@nestjs/passport';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { OrderStatus } from '@prisma/client';
@@ -24,7 +25,7 @@ export class OrdersController {
   @Roles('ADMIN')
   async updateStatus(
     @Param('id') orderId: string,
-    @Body() updateData: { status?: OrderStatus; trackingNumber?: string },
+    @Body() updateData: UpdateOrderStatusDto,
   ) {
     return this.ordersService.updateOrderStatus(orderId, updateData);
   }

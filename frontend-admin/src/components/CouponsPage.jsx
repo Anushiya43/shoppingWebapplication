@@ -4,11 +4,13 @@ import {
   CheckCircle2, AlertCircle, Calendar, Percent, 
   Banknote, Info, BarChart3
 } from 'lucide-react';
-import { getCoupons, createCoupon, updateCoupon, deleteCoupon } from '../api/coupons';
+import { getCoupons, createCoupon, updateCoupon, deleteCoupon, getCouponAnalytics } from '../api/coupons';
 
 const CouponsPage = () => {
     const [coupons, setCoupons] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadingAnalytics, setLoadingAnalytics] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentCoupon, setCurrentCoupon] = useState(null);
     const [formData, setFormData] = useState({ 
@@ -26,6 +28,7 @@ const CouponsPage = () => {
 
     useEffect(() => {
         fetchCoupons();
+        fetchAnalytics();
     }, []);
 
     const fetchCoupons = async () => {
@@ -37,6 +40,18 @@ const CouponsPage = () => {
             showNotification('error', err.response?.data?.message || 'Failed to fetch coupons');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchAnalytics = async () => {
+        setLoadingAnalytics(true);
+        try {
+            const res = await getCouponAnalytics();
+            setAnalytics(res.data);
+        } catch (err) {
+            console.error('Failed to fetch analytics', err);
+        } finally {
+            setLoadingAnalytics(false);
         }
     };
 
@@ -145,6 +160,46 @@ const CouponsPage = () => {
                 >
                     <Plus size={18} /> New Coupon
                 </button>
+            </div>
+
+            {/* Analytics Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {loadingAnalytics ? (
+                    Array(4).fill(0).map((_, i) => (
+                        <div key={i} className="h-24 bg-white rounded-xl border border-slate-100 animate-pulse"></div>
+                    ))
+                ) : analytics && (
+                    <>
+                        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm grow-on-hover">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Coupons</p>
+                            <div className="flex items-end justify-between">
+                                <h3 className="text-2xl font-black text-primary-900">{analytics.totalCoupons}</h3>
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Ticket size={20} /></div>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm grow-on-hover">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Now</p>
+                            <div className="flex items-end justify-between">
+                                <h3 className="text-2xl font-black text-primary-900">{analytics.activeCouponsCount}</h3>
+                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 size={20} /></div>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm grow-on-hover">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Discounted</p>
+                            <div className="flex items-end justify-between">
+                                <h3 className="text-2xl font-black text-primary-900">₹{analytics.totalDiscountAmount.toLocaleString()}</h3>
+                                <div className="p-2 bg-sky-50 text-sky-600 rounded-lg"><Banknote size={20} /></div>
+                            </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm grow-on-hover">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Top Performer</p>
+                            <div className="flex items-end justify-between">
+                                <h3 className="text-sm font-black text-primary-900 uppercase tracking-wider">{analytics.topCoupons?.[0]?.code || 'N/A'}</h3>
+                                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><BarChart3 size={20} /></div>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Notification */}

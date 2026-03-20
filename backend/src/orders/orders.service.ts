@@ -233,6 +233,16 @@ export class OrdersService {
         });
       }
 
+      // 3. Restore Coupon usage if applicable
+      if (order.couponId) {
+        await (tx.coupon as any).update({
+          where: { id: order.couponId },
+          data: {
+            usedCount: { decrement: 1 },
+          },
+        });
+      }
+
       return updatedOrder;
     });
   }

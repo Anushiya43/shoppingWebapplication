@@ -112,4 +112,46 @@ export class CouponsService {
       },
     });
   }
+
+  async getAnalytics() {
+    const totalCoupons = await this.prisma.coupon.count();
+    
+    // Aggregate data from Orders table
+    const orderStats = await this.prisma.order.aggregate({
+      _sum: {
+        discountAmount: true,
+      },
+      where: {
+        couponId: { not: null },
+        status: { not: 'CANCELLED' }
+      }
+    });
+
+    const activeCouponsCount = await this.prisma.coupon.count({
+      where: {
+        expiryDate: { gt: new Date() }
+      }
+    });
+
+    // Top performing coupons by usage and total discount
+    const topCoupons = await this.prisma.coupon.findMany({
+      orderBy: {
+        usedCount: 'desc'
+      },
+      take: 5,
+      select: {
+        code: true,
+        usedCount: true,
+        type: true,
+        value: true
+      }
+    });
+
+    return {
+      totalCoupons,
+      activeCouponsCount,
+      totalDiscountAmount: Number(orderStats._sum.discountAmount || 0),
+      topCoupons
+    };
+  }
 }
