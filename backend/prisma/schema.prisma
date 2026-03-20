@@ -55,6 +55,7 @@ model Product {
   price              Decimal
   discountPercentage Decimal?    @default(0)
   stock              Int
+  minStock           Int         @default(5)
   categoryId         String
   category           Category    @relation(fields: [categoryId], references: [id])
   imageUrl           String
