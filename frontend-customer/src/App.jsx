@@ -16,6 +16,9 @@ import OrderSuccessPage from './pages/OrderSuccessPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import OffersPage from './pages/OffersPage';
+import ProfilePage from './pages/ProfilePage';
+import AddressManagement from './pages/AddressManagement';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const AuthSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -65,11 +68,13 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+          <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+          <Route path="/order-success/:orderId" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
-          <Route path="/orders/:id/track" element={<OrderTrackingPage />} />
+          <Route path="/orders/:id/track" element={<ProtectedRoute><OrderTrackingPage /></ProtectedRoute>} />
           <Route path="/offers" element={<OffersPage />} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/addresses" element={<ProtectedRoute><AddressManagement /></ProtectedRoute>} />
         </Routes>
       </Router>
     </NotificationProvider>

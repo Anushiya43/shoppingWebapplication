@@ -65,7 +65,7 @@ const AdminLayout = ({ children }) => {
           ))}
           <div className="h-px bg-white/5 my-4"></div>
           <p className="px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Management</p>
-          <Link to="#" className="p-3 hover:bg-white/5 rounded-xl transition-all flex items-center gap-3 text-slate-400 text-sm font-semibold hover:text-white group">
+          <Link to="/" className="p-3 hover:bg-white/5 rounded-xl transition-all flex items-center gap-3 text-slate-400 text-sm font-semibold hover:text-white group">
             <BarChart3 size={18} className="group-hover:scale-105 transition-transform" /> Analytics
           </Link>
         </nav>
@@ -83,14 +83,14 @@ const AdminLayout = ({ children }) => {
             </button>
             <div>
               <h1 className="text-lg lg:text-xl font-bold tracking-tight flex items-center gap-2">
-                {currentPath === '/' ? `Welcome back, ${user.firstName}` : currentPath.split('/')[1].charAt(0).toUpperCase() + currentPath.split('/')[1].slice(1)}
+                {currentPath === '/' ? `Welcome back, ${user?.firstName || 'Admin'}` : currentPath.split('/')[1].charAt(0).toUpperCase() + currentPath.split('/')[1].slice(1)}
               </h1>
               <p className="hidden md:block text-text-muted font-medium text-xs">Admin Control Center</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex flex-col items-end border-r border-slate-200 pr-4 mr-1">
-              <span className="text-xs font-bold text-text-main">{user.firstName} {user.lastName}</span>
+              <span className="text-xs font-bold text-text-main">{user?.firstName || 'Logged'} {user?.lastName || 'In'}</span>
               <span className="text-[10px] font-semibold text-accent-blue uppercase tracking-wider">Administrator</span>
             </div>
             <button

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Package, ShieldAlert, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
@@ -8,6 +8,7 @@ import LoginModal from '../components/common/LoginModal';
 import { getProducts } from '../api/products';
 import { getCategories } from '../api/categories';
 import { getBanners } from '../api/banners';
+import useAuthStore from '../store/useAuthStore';
 
 const ProductCardSkeleton = () => (
   <div className="bg-white p-4 rounded-xl shadow-sm animate-pulse flex flex-col h-full">
@@ -88,16 +89,24 @@ const BannerCarousel = ({ banners }) => {
   );
 };
 
-import useAuthStore from '../store/useAuthStore';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+
+  useEffect(() => {
+    if (location.state) {
+        if (location.state.selectedCategory) setSelectedCategory(location.state.selectedCategory);
+        if (location.state.categoryId !== undefined) setSelectedCategoryId(location.state.categoryId);
+        if (location.state.searchQuery !== undefined) setSearchQuery(location.state.searchQuery);
+    }
+  }, [location.state]);
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -111,7 +120,7 @@ const HomePage = () => {
       .catch(err => console.error('Failed to fetch categories:', err));
     
     getBanners()
-      .then(res => setBanners(res.data))
+      .then(res => setBanners(Array.isArray(res.data) ? res.data : []))
       .catch(err => console.error('Failed to fetch banners:', err));
   }, []);
 

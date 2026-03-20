@@ -20,6 +20,7 @@ const InventoryPage = () => {
         price: '',
         discountPercentage: '0',
         stock: '',
+        minStock: '5',
         categoryId: '',
     });
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -159,6 +160,7 @@ const InventoryPage = () => {
                 price: product.price,
                 discountPercentage: product.discountPercentage,
                 stock: product.stock,
+                minStock: product.minStock || '5',
                 categoryId: product.categoryId,
             });
             // Handle existing images
@@ -172,6 +174,7 @@ const InventoryPage = () => {
                 price: '',
                 discountPercentage: '0',
                 stock: '',
+                minStock: '5',
                 categoryId: categories[0]?.id || '',
             });
             setPreviewUrls([]);
@@ -300,12 +303,17 @@ const InventoryPage = () => {
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${
-                                                prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                                    <td className="px-6 py-4 text-center">
+                                        <div className={`inline-flex flex-col items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${
+                                                prod.stock > (prod.minStock || 5) ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
                                             }`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${prod.stock > 10 ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
-                                            {prod.stock} in stock
+                                            <div className="flex items-center gap-1.5">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${prod.stock > (prod.minStock || 5) ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+                                                {prod.stock} in stock
+                                            </div>
+                                            {prod.stock <= (prod.minStock || 5) && (
+                                                <span className="text-[8px] opacity-70 tracking-tighter">(Min: {prod.minStock || 5})</span>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -489,6 +497,15 @@ const InventoryPage = () => {
                                                 }}
                                             />
                                             {errors.stock && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.stock}</p>}
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-text-muted ml-0.5">Min Stock</label>
+                                            <input
+                                                type="number" placeholder="5"
+                                                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all font-bold text-accent-blue"
+                                                value={formData.minStock}
+                                                onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                                            />
                                         </div>
                                     </div>
 
