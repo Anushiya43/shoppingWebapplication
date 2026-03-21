@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 
@@ -48,6 +48,7 @@ export class ReviewsService {
       data: {
         rating,
         comment,
+        isApproved: true, // Default to approved, but can be moderated
         product: { connect: { id: productId } },
         user: { connect: { id: userId } },
       },
@@ -62,9 +63,34 @@ export class ReviewsService {
     });
   }
 
-  async findByProduct(productId: string) {
+  async updateStatus(id: string, isApproved: boolean) {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+    if (!review) throw new NotFoundException('Review not found');
+
+    return this.prisma.review.update({
+      where: { id },
+      data: { isApproved },
+    });
+  }
+
+  async remove(id: string, userId?: string) {
+    const review = await this.prisma.review.findUnique({ where: { id } });
+    if (!review) throw new NotFoundException('Review not found');
+
+    // If userId is provided, ensure only the author can delete
+    if (userId && review.userId !== userId) {
+      throw new ConflictException('Unauthorized to delete this review');
+    }
+
+    return this.prisma.review.delete({ where: { id } });
+  }
+
+  async findByProduct(productId: string, isAdmin = false) {
     const reviews = await this.prisma.review.findMany({
-      where: { productId },
+      where: { 
+        productId,
+        ...(isAdmin ? {} : { isApproved: true }) 
+      },
       include: {
         user: {
           select: {

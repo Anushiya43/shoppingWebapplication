@@ -4,7 +4,7 @@ import useAuthStore from '../../store/useAuthStore';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, BarChart3,
   LogOut, ShieldAlert, X, LayoutGrid, Menu, ArrowLeft, Image as ImageIcon,
-  Ticket, Building2
+  Ticket, Building2, Star, Layers
 } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
@@ -50,6 +50,8 @@ const AdminLayout = ({ children }) => {
             { label: 'Categories', path: '/categories', icon: LayoutGrid },
             { label: 'Orders', path: '/orders', icon: ShoppingCart },
             { label: 'Users', path: '/users', icon: Users },
+            { label: 'Reviews', path: '/reviews', icon: Star },
+            { label: 'Bulk Tools', path: '/bulk-inventory', icon: Layers },
           ].map((item) => (
             <Link
               key={item.path}

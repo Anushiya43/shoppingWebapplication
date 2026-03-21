@@ -17,6 +17,7 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FindAllProductDto } from './dto/find-all-product.dto';
+import { BulkUpdateDto } from './dto/bulk-update.dto';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -77,6 +78,13 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
+  @Get('low-stock')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getLowStock() {
+    return this.productsService.getLowStockFixed();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
@@ -114,6 +122,13 @@ export class ProductsController {
       ...updateData,
       imageGallery: imageGallery.length > 0 ? imageGallery : undefined,
     });
+  }
+
+  @Patch('bulk-update')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async bulkUpdate(@Body() bulkUpdateDto: BulkUpdateDto) {
+    return this.productsService.batchUpdate(bulkUpdateDto.ids, bulkUpdateDto.data);
   }
 
   @Delete(':id')

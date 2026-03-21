@@ -4,6 +4,7 @@ import { CartService } from '../cart/cart.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus, Prisma } from '@prisma/client';
 import { CouponsService } from '../coupons/coupons.service';
+import { EmailService } from '../common/services/email.service';
 
 @Injectable()
 export class OrdersService {
@@ -11,6 +12,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private cartService: CartService,
     private couponsService: CouponsService,
+    private emailService: EmailService,
   ) {}
 
   private calculateShipping(totalAmount: number): number {
@@ -67,7 +69,6 @@ export class OrdersService {
         throw new BadRequestException('Invalid coupon code');
       }
 
-      // Additional validation logic via service
       if (new Date() > validatedCoupon.expiryDate) {
         throw new BadRequestException('Coupon has expired');
       }
@@ -90,8 +91,7 @@ export class OrdersService {
     const shippingCost = this.calculateShipping(totalAmount);
     const finalAmount = Math.max(0, totalAmount - discountAmount + shippingCost);
 
-    // Atomic Transaction
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
         data: {
           userId,
@@ -109,7 +109,6 @@ export class OrdersService {
         },
       });
 
-      // Increment Coupon usage if applied
       if (createOrderDto.couponId) {
         await (tx.coupon as any).update({
           where: { id: createOrderDto.couponId },
@@ -119,7 +118,6 @@ export class OrdersService {
         });
       }
 
-      // Update stock
       for (const item of orderItemsData) {
         await tx.product.update({
           where: { id: item.productId },
@@ -131,13 +129,35 @@ export class OrdersService {
         });
       }
 
-      // Clear the cart - using cartId from the fetched cart
       await tx.cartItem.deleteMany({
         where: { cartId: cart.id },
       });
 
       return order;
     });
+
+    // Check for low stock and alert - done outside transaction
+    this.checkLowStockAndAlert(orderItemsData);
+
+    return result;
+  }
+
+  private async checkLowStockAndAlert(items: Prisma.OrderItemCreateManyOrderInput[]) {
+    for (const item of items) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: item.productId },
+      });
+
+      if (product && product.stock <= product.minStock) {
+        const adminEmail = process.env.MAIL_FROM || 'admin@shoppingapp.com';
+        await this.emailService.sendLowStockAlert(
+          adminEmail,
+          product.name,
+          product.stock,
+          product.minStock,
+        );
+      }
+    }
   }
 
   async getOrders(userId: string): Promise<Order[]> {
@@ -222,13 +242,11 @@ export class OrdersService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Update order status
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: { status: OrderStatus.CANCELLED },
       });
 
-      // 2. Restore stock
       for (const item of order.orderItems) {
         await tx.product.update({
           where: { id: item.productId },
@@ -240,7 +258,6 @@ export class OrdersService {
         });
       }
 
-      // 3. Restore Coupon usage if applicable
       if (order.couponId) {
         await (tx.coupon as any).update({
           where: { id: order.couponId },

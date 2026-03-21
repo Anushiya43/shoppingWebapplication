@@ -15,9 +15,11 @@ import { BannersModule } from './banners/banners.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { BrandsModule } from './brands/brands.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
+    CommonModule,
     PrismaModule,
     AuthModule,
     CategoriesModule,

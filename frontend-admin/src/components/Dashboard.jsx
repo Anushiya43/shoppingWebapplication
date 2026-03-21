@@ -13,6 +13,8 @@ import DashboardHome from './dashboard/DashboardHome';
 import BannersPage from './BannersPage';
 import CouponsPage from './CouponsPage';
 import BrandsPage from './BrandsPage';
+import ReviewsModerationPage from './ReviewsModerationPage';
+import BulkInventoryPage from './BulkInventoryPage';
 
 const Dashboard = () => {
   // 1. ALL HOOKS AT THE VERY TOP (STABLE ORDER)
@@ -151,6 +153,8 @@ const Dashboard = () => {
           {currentPath === '/users' && <UserManagementPage key="users" />}
           {currentPath === '/banners' && <BannersPage key="banners" />}
           {currentPath === '/coupons' && <CouponsPage key="coupons" />}
+          {currentPath === '/reviews' && <ReviewsModerationPage key="reviews" />}
+          {currentPath === '/bulk-inventory' && <BulkInventoryPage key="bulk-inventory" />}
         </AdminLayout>
       )}
     </div>

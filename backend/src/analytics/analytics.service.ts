@@ -193,4 +193,32 @@ export class AnalyticsService {
       categoryRevenue: consolidatedCategoryStats,
     };
   }
+
+  async exportStats(range: string): Promise<string> {
+    const stats = await this.getStats(range);
+    
+    // Simple CSV generation
+    const rows = [
+      ['Metric', 'Value'],
+      ['Total Revenue', `₹${stats.totalRevenue.toLocaleString()}`],
+      ['Active Orders', stats.activeOrders],
+      ['Total Users', stats.totalUsers],
+      ['Conversion Rate', `${stats.conversionRate}%`],
+      ['Abandoned Carts', stats.abandonedCarts],
+      ['Repeat Customer Rate', `${stats.repeatCustomerRate}%`],
+      ['Average Order Value', `₹${stats.avgOrderValue.toLocaleString()}`],
+      ['MoM Growth', `${stats.momGrowth}%`],
+      [''],
+      ['Category Split'],
+      ...stats.categoryRevenue.map(c => [c.name, `₹${c.value}`]),
+      [''],
+      ['Location Split'],
+      ...stats.locationStats.map(l => [l.name, l.value]),
+      [''],
+      ['Top Products'],
+      ...stats.topProducts.map(p => [p.name, `${p.sales} sold`, `₹${p.price}`]),
+    ];
+
+    return rows.map(r => r.join(',')).join('\n');
+  }
 }

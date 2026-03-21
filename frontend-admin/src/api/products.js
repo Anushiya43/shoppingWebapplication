@@ -16,3 +16,6 @@ export const updateProduct = (id, formData) => API.patch(`/products/${id}`, form
 });
 
 export const deleteProduct = (id) => API.delete(`/products/${id}`);
+
+export const getLowStock = () => API.get('/products/low-stock');
+export const bulkUpdateProducts = (ids, data) => API.patch('/products/bulk-update', { ids, data });

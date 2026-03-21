@@ -156,4 +156,43 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
   }
+
+  async getLowStock() {
+    return this.prisma.product.findMany({
+      where: {
+        isDeleted: false,
+        stock: {
+          lte: this.prisma.product.fields.minStock as any, // This might not work directly in where
+        },
+      },
+      include: { category: true, brand: true },
+    });
+  }
+
+  // Workaround for stock <= minStock
+  async getLowStockFixed() {
+    const products = await this.prisma.product.findMany({
+      where: { isDeleted: false },
+      include: { category: true, brand: true },
+    });
+    return products.filter(p => p.stock <= p.minStock);
+  }
+
+  async batchUpdate(ids: string[], data: UpdateProductDto) {
+    const { price, stock, minStock, discountPercentage } = data;
+    
+    return this.prisma.product.updateMany({
+      where: {
+        id: { in: ids },
+      },
+      data: {
+        ...(price !== undefined && { price: new Prisma.Decimal(price) }),
+        ...(stock !== undefined && { stock: Number(stock) }),
+        ...(minStock !== undefined && { minStock: Number(minStock) }),
+        ...(discountPercentage !== undefined && { discountPercentage: new Prisma.Decimal(discountPercentage) }),
+        ...(data.categoryId && { categoryId: data.categoryId }),
+        ...(data.brandId && { brandId: data.brandId }),
+      },
+    });
+  }
 }

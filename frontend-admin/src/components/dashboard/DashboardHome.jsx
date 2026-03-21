@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
-import { Package, BarChart3, AlertCircle, TrendingUp, Users, ShoppingBag, Target, Star, MoreHorizontal } from 'lucide-react';
-import { getStats } from '../../api/analytics';
+import { getStats, exportStats } from '../../api/analytics';
+import { getLowStock } from '../../api/products';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -35,6 +35,7 @@ const DashboardHome = () => {
     conversionRate: 0,
     locationStats: []
   });
+  const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showNotification } = useNotification();
 
@@ -91,11 +92,38 @@ const DashboardHome = () => {
         conversionRate: data.conversionRate || 0,
         locationStats: data.locationStats || []
       });
+
+      const lowStockRes = await getLowStock();
+      setLowStockItems(lowStockRes.data || []);
     } catch (err) {
       console.error('Failed to fetch dashboard stats:', err);
       showNotification('error', 'Failed to load real-time analytics');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      showNotification('info', 'Preparing your professional report...');
+      const response = await exportStats(range);
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `analytics-report-${range}-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+      showNotification('success', 'Report downloaded successfully');
+    } catch (err) {
+      console.error('Export failed:', err);
+      showNotification('error', 'Failed to generate export report');
     }
   };
 
@@ -109,7 +137,16 @@ const DashboardHome = () => {
           <p className="text-[10px] text-text-muted font-bold opacity-60 uppercase tracking-widest">Real-time enterprise metrics</p>
         </div>
         
-        <div className="flex bg-slate-100/50 p-1 rounded-xl border border-slate-200/60 backdrop-blur-sm self-start md:self-auto shadow-inner">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+          >
+            <Download size={14} />
+            Export CSV
+          </button>
+
+          <div className="flex bg-slate-100/50 p-1 rounded-xl border border-slate-200/60 backdrop-blur-sm shadow-inner">
           {['7d', '30d', 'all'].map((r) => (
             <button
               key={r}
@@ -125,8 +162,9 @@ const DashboardHome = () => {
           ))}
         </div>
       </div>
+    </div>
 
-      {/* Stats Grid */}
+    {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.map((stat, i) => (
@@ -366,6 +404,32 @@ const DashboardHome = () => {
           </div>
         </div>
       </div>
+
+      {/* Critical Stock Alert - Full Width Section */}
+      {lowStockItems.length > 0 && (
+        <div className="mt-6 bg-red-50 border border-red-100 rounded-[2rem] p-8 relative overflow-hidden group shadow-lg shadow-red-500/5">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
+           <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+              <div className="flex items-center gap-6">
+                 <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-md animate-bounce duration-[2000ms]">
+                    <AlertCircle className="text-red-500" size={32} />
+                 </div>
+                 <div>
+                    <h3 className="text-xl font-black text-red-900 uppercase tracking-tight">Critical Inventory Breach</h3>
+                    <p className="text-[10px] text-red-600 font-bold uppercase tracking-[0.2em] mt-1 italic">
+                       {lowStockItems.length} Products have fallen below threshold constraints
+                    </p>
+                 </div>
+              </div>
+              <button 
+                 onClick={() => navigate('/bulk-inventory')}
+                 className="px-8 py-4 bg-red-500 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 active:scale-95"
+              >
+                 Enter Logistics Control
+              </button>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
