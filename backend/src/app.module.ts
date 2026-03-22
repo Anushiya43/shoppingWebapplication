@@ -16,6 +16,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { BrandsModule } from './brands/brands.module';
 import { CommonModule } from './common/common.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CommonModule } from './common/common.module';
     CouponsModule,
     ReviewsModule,
     BrandsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

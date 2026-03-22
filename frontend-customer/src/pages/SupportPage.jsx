@@ -14,11 +14,11 @@ const SupportPage = () => {
   const faqs = [
     {
       q: "Where is my order?",
-      a: "You can track your order in real-time by visiting your Order History page. Most orders arrive within 4-5 business days."
+      a: `You can track your order in real-time by visiting your Order History page. Most orders arrive within ${import.meta.env.VITE_SHIPPING_DAYS_MIN || 4}-${import.meta.env.VITE_SHIPPING_DAYS_MAX || 5} business days.`
     },
     {
       q: "What is your return policy?",
-      a: "We offer a 30-day premium return policy for all unused items in their original packaging."
+      a: `We offer a ${import.meta.env.VITE_RETURN_POLICY_DAYS || 30}-day premium return policy for all unused items in their original packaging.`
     },
     {
       q: "How do I use a coupon?",
@@ -26,7 +26,7 @@ const SupportPage = () => {
     },
     {
       q: "Are my payments secure?",
-      a: "Yes, we use industry-standard encryption and secure payment gateways to ensure your financial data is always protected."
+      a: `Yes, we use industry-standard encryption and secure payment gateways (like Razorpay) to ensure your financial data is always protected.`
     }
   ];
 
@@ -59,8 +59,8 @@ const SupportPage = () => {
               </div>
               <h4 className="font-black text-primary-900 text-lg mb-2">Email Support</h4>
               <p className="text-sm text-text-muted font-medium mb-6">Average response time: 2 hours</p>
-              <a href="mailto:support@modernshop.com" className="text-accent-blue font-black text-xs uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all">
-                support@modernshop.com <ChevronRight size={14} />
+              <a href={`mailto:${import.meta.env.VITE_SUPPORT_EMAIL || 'support@modernshop.com'}`} className="text-accent-blue font-black text-xs uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all">
+                {import.meta.env.VITE_SUPPORT_EMAIL || 'support@modernshop.com'} <ChevronRight size={14} />
               </a>
             </div>
 
@@ -70,7 +70,7 @@ const SupportPage = () => {
               </div>
               <h4 className="font-black text-primary-900 text-lg mb-2">Priority Call</h4>
               <p className="text-sm text-text-muted font-medium mb-6">Mon-Fri, 9am - 8pm IST</p>
-              <p className="text-accent-blue font-black text-xs uppercase tracking-widest">+91 1800-SHOP-NOW</p>
+              <p className="text-accent-blue font-black text-xs uppercase tracking-widest">{import.meta.env.VITE_SUPPORT_PHONE || '+91 1800-SHOP-NOW'}</p>
             </div>
 
           </div>
@@ -120,7 +120,7 @@ const SupportPage = () => {
                     <div className="w-20 h-20 bg-primary-900 rounded-full flex items-center justify-center text-white mb-4 shadow-lg shadow-primary-900/20">
                       <LifeBuoy size={32} />
                     </div>
-                    <p className="text-[10px] font-black text-primary-900 uppercase tracking-widest mb-1">ModernShop</p>
+                    <p className="text-[10px] font-black text-primary-900 uppercase tracking-widest mb-1">{import.meta.env.VITE_APP_NAME || 'ModernShop'}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Verified Help</p>
                   </div>
                 </div>

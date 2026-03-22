@@ -6,20 +6,85 @@ import useCartStore from '../store/useCartStore';
 import { useNotification } from '../context/NotificationContext';
 
 import { useOrders } from '../hooks/useOrders';
+import { loadRazorpay } from '../utils/razorpay';
+import api from '../api/index';
 
 const OrdersPage = () => {
   const user = useAuthStore(state => state.user);
   const { showNotification } = useNotification();
-  const { orders, loading, error, cancelOrder } = useOrders();
+  const { orders, loading, error, cancelOrder, fetchOrders } = useOrders();
   const addItem = useCartStore(state => state.addItem);
   const navigate = useNavigate();
   const [reordering, setReordering] = useState(null);
+  const [paying, setPaying] = useState(null);
 
   useEffect(() => {
     if (!user) {
       navigate('/');
     }
   }, [user, navigate]);
+
+  const handlePayNow = async (order) => {
+    setPaying(order.id);
+    try {
+      let razorpayOrderId = order.razorpayOrderId;
+
+      // If missing, fetch/create from backend
+      if (!razorpayOrderId) {
+        try {
+          const res = await api.get(`/orders/${order.id}/razorpay-order`);
+          razorpayOrderId = res.data.razorpayOrderId;
+        } catch (err) {
+          showNotification('Failed to generate payment ID. Please contact support.', 'error');
+          return;
+        }
+      }
+
+      const isLoaded = await loadRazorpay();
+      if (!isLoaded) {
+        showNotification('Razorpay SDK failed to load', 'error');
+        return;
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+        amount: Number(order.totalAmount) * 100,
+        currency: 'INR',
+        name: import.meta.env.VITE_APP_NAME || 'ModernShop',
+        description: `Order #${order.id}`,
+        order_id: razorpayOrderId,
+        handler: async (response) => {
+          try {
+            await api.post('/payments/verify', {
+              orderId: order.id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            showNotification('Payment successful!', 'success');
+            fetchOrders(); // Refresh list
+          } catch (err) {
+            showNotification('Verification failed', 'error');
+          }
+        },
+        prefill: {
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          contact: user.phoneNumber,
+        },
+        theme: {
+          color: '#0f172a',
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      showNotification('Failed to initiate payment', 'error');
+    } finally {
+      setPaying(null);
+    }
+  };
 
   const handleCancelOrder = async (orderId) => {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
@@ -132,6 +197,10 @@ const OrdersPage = () => {
                     <p className="uppercase tracking-widest opacity-50">SHIP TO</p>
                     <p className="text-sm font-black text-accent-blue hover:text-primary-900 transition-colors cursor-pointer">{user?.firstName} {user?.lastName}</p>
                   </div>
+                  <div className="space-y-1">
+                    <p className="uppercase tracking-widest opacity-50">PAYMENT</p>
+                    <p className="text-sm font-black text-primary-900">{order.paymentMethod || 'COD'}</p>
+                  </div>
                   <div className="ml-auto text-right space-y-1">
                     <p className="uppercase tracking-widest opacity-50">ORDER ID: {order.id.split('-')[0].toUpperCase()}</p>
                     <div className="flex items-center justify-end gap-4 mt-2">
@@ -152,6 +221,13 @@ const OrdersPage = () => {
                     <div className="flex items-center gap-3">
                       <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border ${getStatusStyles(order.status)} animate-pulse-slow`}>
                         {order.status}
+                      </div>
+                      <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                        order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                        order.paymentStatus === 'FAILED' ? 'bg-red-50 text-red-600 border-red-100' : 
+                        'bg-amber-50 text-amber-600 border-amber-100'
+                      }`}>
+                        Payment: {order.paymentStatus || 'PENDING'}
                       </div>
                       {/* Tracking ID Disabled
                       {order.trackingNumber && (
@@ -181,6 +257,15 @@ const OrdersPage = () => {
                               >
                                 {reordering === item.product.id ? 'Adding...' : 'Order Again'}
                               </button>
+                            {order.paymentMethod === 'ONLINE' && order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED' && (
+                              <button 
+                                onClick={() => handlePayNow(order)}
+                                disabled={paying === order.id}
+                                className="px-6 py-2.5 bg-accent-blue hover:bg-accent-blue/90 text-white rounded-2xl text-[13px] font-black shadow-lg shadow-accent-blue/20 transition-all active:scale-95 disabled:opacity-50"
+                              >
+                                {paying === order.id ? 'Processing...' : 'Pay Now'}
+                              </button>
+                            )}
                             <button 
                               onClick={() => navigate(`/orders/${order.id}/track`)}
                               className="px-6 py-2.5 bg-white hover:bg-gray-50 text-primary-900 border border-gray-100 rounded-2xl text-[13px] font-black transition-all active:scale-90"

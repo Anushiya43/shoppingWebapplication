@@ -112,6 +112,9 @@ model Order {
   shippingAddress String?
   trackingNumber  String?
   shippingCost    Decimal     @default(0)
+  paymentMethod   PaymentMethod @default(COD)
+  paymentStatus   PaymentStatus @default(PENDING)
+  razorpayOrderId String?
   coupon          Coupon?     @relation(fields: [couponId], references: [id])
   user            User        @relation(fields: [userId], references: [id])
   orderItems      OrderItem[]
@@ -218,4 +221,16 @@ enum OrderStatus {
 enum CouponType {
   PERCENTAGE
   FIXED
+}
+
+enum PaymentMethod {
+  COD
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }

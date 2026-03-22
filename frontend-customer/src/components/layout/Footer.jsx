@@ -52,8 +52,12 @@ const Footer = () => {
       <div className="border-t border-white/5 py-12 flex flex-col items-center gap-6">
         <div className="flex items-center gap-2">
           <div className="text-2xl font-black tracking-tight flex items-center gap-1">
-            <span className="bg-gradient-to-r from-accent-cyan to-accent-blue bg-clip-text text-transparent">Modern</span>
-            <span className="text-white">Shop</span>
+            <span className="bg-gradient-to-r from-accent-cyan to-accent-blue bg-clip-text text-transparent">
+              {(import.meta.env.VITE_APP_NAME || 'ModernShop').slice(0, 6)}
+            </span>
+            <span className="text-white">
+              {(import.meta.env.VITE_APP_NAME || 'ModernShop').slice(6)}
+            </span>
           </div>
         </div>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-[12px] text-gray-400 font-medium max-w-2xl mx-auto">
@@ -69,7 +73,7 @@ const Footer = () => {
           <Link to="#" className="hover:text-white transition-colors">Privacy Notice</Link>
           <Link to="#" className="hover:text-white transition-colors">Your Ads Privacy Choices</Link>
         </div>
-        <p className="text-gray-600 font-medium italic opacity-60">© 2026 ModernShop. Designed for excellence.</p>
+        <p className="text-gray-600 font-medium italic opacity-60">© {new Date().getFullYear()} {import.meta.env.VITE_APP_NAME || 'ModernShop'}. Designed for excellence.</p>
       </div>
     </footer>
   );

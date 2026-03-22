@@ -49,4 +49,9 @@ export class OrdersController {
   async cancelOrder(@Req() req, @Param('id') orderId: string) {
     return this.ordersService.cancelOrder(req.user.id, orderId);
   }
+
+  @Get(':id/razorpay-order')
+  async getRazorpayOrder(@Req() req, @Param('id') orderId: string) {
+    return this.ordersService.getOrCreateRazorpayOrder(req.user.id, orderId);
+  }
 }
