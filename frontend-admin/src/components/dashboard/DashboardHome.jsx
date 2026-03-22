@@ -4,17 +4,17 @@ import { useNotification } from '../../context/NotificationContext';
 import { getStats, exportStats } from '../../api/analytics';
 import { getLowStock } from '../../api/products';
 import { Package, BarChart3, AlertCircle, TrendingUp, Users, ShoppingBag, Target, Star, MoreHorizontal, Download } from 'lucide-react';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  BarChart, 
-  Bar, 
-  Cell 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+  Cell
 } from 'recharts';
 
 const DashboardHome = () => {
@@ -28,8 +28,8 @@ const DashboardHome = () => {
   const [chartData, setChartData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [range, setRange] = useState('all');
-  const [advancedStats, setAdvancedStats] = useState({ 
-    repeatCustomerRate: 0, 
+  const [advancedStats, setAdvancedStats] = useState({
+    repeatCustomerRate: 0,
     avgOrderValue: 0,
     momGrowth: 0,
     categoryRevenue: [],
@@ -39,7 +39,12 @@ const DashboardHome = () => {
   });
   const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
   const { showNotification } = useNotification();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -52,43 +57,43 @@ const DashboardHome = () => {
       const data = res.data;
 
       setStats([
-        { 
-          label: 'Total Revenue', 
-          value: `₹${data.totalRevenue.toLocaleString()}`, 
-          change: `${data.momGrowth > 0 ? '+' : ''}${data.momGrowth}%`, 
-          icon: <TrendingUp size={20} className="text-emerald-500" />, 
+        {
+          label: 'Total Revenue',
+          value: `₹${data.totalRevenue.toLocaleString()}`,
+          change: `${data.momGrowth > 0 ? '+' : ''}${data.momGrowth}%`,
+          icon: <TrendingUp size={20} className="text-emerald-500" />,
           trend: data.momGrowth >= 0 ? 'up' : 'down',
           color: 'bg-emerald-50'
         },
-        { 
-          label: 'Active Orders', 
-          value: data.activeOrders.toString(), 
-          change: 'Current', 
-          icon: <ShoppingBag size={20} className="text-accent-blue" />, 
+        {
+          label: 'Active Orders',
+          value: data.activeOrders.toString(),
+          change: 'Current',
+          icon: <ShoppingBag size={20} className="text-accent-blue" />,
           trend: 'up',
           color: 'bg-blue-50'
         },
-        { 
-          label: 'Total Users', 
-          value: data.totalUsers.toLocaleString(), 
-          change: 'Verified', 
-          icon: <Users size={20} className="text-indigo-500" />, 
+        {
+          label: 'Total Users',
+          value: data.totalUsers.toLocaleString(),
+          change: 'Verified',
+          icon: <Users size={20} className="text-indigo-500" />,
           trend: 'up',
           color: 'bg-indigo-50'
         },
-        { 
-          label: "Today's Revenue", 
-          value: `₹${data.todayRevenue.toLocaleString()}`, 
-          change: 'Live', 
-          icon: <BarChart3 size={20} className="text-accent-pink" />, 
+        {
+          label: "Today's Revenue",
+          value: `₹${data.todayRevenue.toLocaleString()}`,
+          change: 'Live',
+          icon: <BarChart3 size={20} className="text-accent-pink" />,
           trend: 'up',
           color: 'bg-pink-50'
         },
       ]);
-      
+
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       let formattedChartData;
-      
+
       if (range !== 'all' && data.dailyRevenue && data.dailyRevenue.length > 0) {
         formattedChartData = data.dailyRevenue.map(d => ({
           name: d.date.split('/')[0] + '/' + d.date.split('/')[1], // Short date MM/DD
@@ -100,7 +105,7 @@ const DashboardHome = () => {
           revenue: rev
         }));
       }
-      
+
       setChartData(formattedChartData);
       setTopProducts(data.topProducts || []);
       setAdvancedStats({
@@ -127,7 +132,7 @@ const DashboardHome = () => {
     try {
       showNotification('info', 'Preparing your professional report...');
       const response = await exportStats(range);
-      
+
       // Create a URL for the blob
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -135,11 +140,11 @@ const DashboardHome = () => {
       link.setAttribute('download', `analytics-report-${range}-${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      
+
       showNotification('success', 'Report downloaded successfully');
     } catch (err) {
       console.error('Export failed:', err);
@@ -156,7 +161,7 @@ const DashboardHome = () => {
           <h2 className="text-xl font-black text-text-main tracking-tight uppercase">Executive Overview</h2>
           <p className="text-[10px] text-text-muted font-bold opacity-60 uppercase tracking-widest">Real-time enterprise metrics</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <button
             onClick={handleExport}
@@ -167,72 +172,71 @@ const DashboardHome = () => {
           </button>
 
           <div className="flex bg-slate-100/50 p-1 rounded-xl border border-slate-200/60 backdrop-blur-sm shadow-inner">
-          {['7d', '30d', 'all'].map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all duration-300 ${
-                range === r 
-                  ? 'bg-white text-primary-900 shadow-[0_4px_12px_-4px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5' 
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {r === 'all' ? 'Yearly' : `Last ${r.toUpperCase()}`}
-            </button>
-          ))}
+            {['7d', '30d', 'all'].map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.12em] transition-all duration-300 ${range === r
+                    ? 'bg-white text-primary-900 shadow-[0_4px_12px_-4px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5'
+                    : 'text-slate-400 hover:text-slate-600'
+                  }`}
+              >
+                {r === 'all' ? 'Yearly' : `Last ${r.toUpperCase()}`}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="lg:col-span-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, i) => (
-            <div key={i} className={`p-4 bg-white border border-slate-200/60 rounded-2xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_-6px_rgba(0,0,0,0.08)] transition-all duration-500 group relative overflow-hidden ${loading ? 'animate-pulse' : ''}`}>
-              <div className="flex justify-between items-start mb-4">
-                <div className={`w-10 h-10 ${stat.color} border border-slate-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
-                  {stat.icon}
-                </div>
-                <span className={`text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest ${
-                  stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        {stats.map((stat, i) => (
+          <div key={i} className={`p-4 bg-white border border-slate-200/60 rounded-2xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_-6px_rgba(0,0,0,0.08)] transition-all duration-500 group relative overflow-hidden ${loading ? 'animate-pulse' : ''}`}>
+            <div className="flex justify-between items-start mb-4">
+              <div className={`w-10 h-10 ${stat.color} border border-slate-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-sm`}>
+                {stat.icon}
+              </div>
+              <span className={`text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest ${stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
                 }`}>
-                  {stat.change}
-                </span>
-              </div>
-              <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.15em] mb-1 opacity-60">{stat.label}</p>
-              <h3 className="text-2xl font-black text-text-main tracking-tight italic">
-                {loading ? <div className="h-6 bg-slate-100 rounded w-20"></div> : stat.value}
-              </h3>
+                {stat.change}
+              </span>
             </div>
-          ))}
-        </div>
+            <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.15em] mb-1 opacity-60">{stat.label}</p>
+            <h3 className="text-2xl font-black text-text-main tracking-tight italic">
+              {loading ? <span className="inline-block h-6 w-24 bg-slate-100 rounded-full animate-pulse"></span> : stat.value}
+            </h3>
+          </div>
+        ))}
+      </div>
 
-        {/* New Mini Cards: Conversion & Abandoned */}
-        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl hover:shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] transition-all duration-700 group overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-accent-blue/20 rounded-full -mr-12 -mt-12 blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
-            <Target className="text-accent-blue mb-4 relative z-10" size={24} />
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.15em] mb-1 relative z-10">Purchase Matrix</p>
-            <h3 className="text-2xl font-black text-white tracking-tighter relative z-10 italic">{advancedStats.conversionRate}%</h3>
-            <div className="mt-4 flex flex-col gap-1.5 relative z-10">
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-gradient-to-r from-accent-blue to-accent-cyan rounded-full transition-all duration-1000" style={{ width: `${advancedStats.conversionRate}%` }}></div>
-              </div>
+      {/* Mini Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
+        <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl hover:shadow-[0_15px_30px_-10px_rgba(15,23,42,0.3)] transition-all duration-700 group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-accent-blue/20 rounded-full -mr-12 -mt-12 blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+          <Target className="text-accent-blue mb-4 relative z-10" size={24} />
+          <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.15em] mb-1 relative z-10">Purchase Matrix</p>
+          <h3 className="text-2xl font-black text-white tracking-tighter relative z-10 italic">{advancedStats.conversionRate}%</h3>
+          <div className="mt-4 flex flex-col gap-1.5 relative z-10">
+            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+              <div className="h-full bg-gradient-to-r from-accent-blue to-accent-cyan rounded-full transition-all duration-1000" style={{ width: `${advancedStats.conversionRate}%` }}></div>
             </div>
           </div>
+        </div>
 
-          <div className="p-4 bg-white border border-slate-200/60 rounded-2xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05)] transition-all duration-500 group relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-full -mr-12 -mt-12 blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
-             <AlertCircle className="text-red-500 mb-4 relative z-10" size={24} />
-             <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.15em] mb-1 relative z-10">Leaking Revenue</p>
-             <h3 className="text-2xl font-black text-text-main tracking-tighter relative z-10 italic">
-                {advancedStats.abandonedCarts}
-                <span className="text-[10px] font-bold text-slate-300 ml-1.5 uppercase not-italic tracking-widest">Units</span>
-             </h3>
-             <p className="text-[9px] font-black text-red-500/60 uppercase tracking-widest mt-2 relative z-10 flex items-center gap-1.5">
-                <div className="w-1 h-1 rounded-full bg-red-500 animate-ping"></div>
-                Alert
-             </p>
+        <div className="p-4 bg-white border border-slate-200/60 rounded-2xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05)] transition-all duration-500 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-full -mr-12 -mt-12 blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+          <AlertCircle className="text-red-500 mb-4 relative z-10" size={24} />
+          <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.15em] mb-1 relative z-10">Leaking Revenue</p>
+          <h3 className="text-2xl font-black text-text-main tracking-tighter relative z-10 italic">
+            {advancedStats.abandonedCarts}
+            <span className="text-[10px] font-bold text-slate-300 ml-1.5 uppercase not-italic tracking-widest">Units</span>
+          </h3>
+          <div className="text-[9px] font-black text-red-500/60 uppercase tracking-widest mt-2 relative z-10 flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+            Live System Status
           </div>
         </div>
       </div>
@@ -246,52 +250,54 @@ const DashboardHome = () => {
               <p className="text-[10px] text-text-muted font-bold opacity-60 uppercase tracking-widest">({range === 'all' ? 'Yearly' : `Last ${range.toUpperCase()}`})</p>
             </div>
           </div>
-          <div className="h-72 w-full -ml-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }} 
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }}
-                  tickFormatter={(val) => `₹${val >= 1000 ? (val/1000).toFixed(0)+'k' : val}`}
-                />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)',
-                    fontSize: '11px',
-                    fontWeight: '900',
-                    backgroundColor: '#0f172a',
-                    color: '#fff',
-                    padding: '12px 16px'
-                  }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Bar 
-                  dataKey="revenue" 
-                  radius={[6, 6, 0, 0]}
-                  barSize={range === 'all' ? 30 : 20}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.revenue > 0 ? '#8b5cf6' : '#e2e8f0'} 
-                      className="hover:fill-primary-indigo transition-colors duration-300"
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-72 w-full min-h-[18rem]">
+            {isMounted && !loading && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }}
+                    dy={10}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }}
+                    tickFormatter={(val) => `₹${val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val}`}
+                  />
+                  <Tooltip
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: 'none',
+                      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)',
+                      fontSize: '11px',
+                      fontWeight: '900',
+                      backgroundColor: '#0f172a',
+                      color: '#fff',
+                      padding: '12px 16px'
+                    }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    radius={[6, 6, 0, 0]}
+                    barSize={range === 'all' ? 30 : 20}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.revenue > 0 ? '#8b5cf6' : '#e2e8f0'}
+                        className="hover:fill-primary-indigo transition-colors duration-300"
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -300,7 +306,7 @@ const DashboardHome = () => {
           <div>
             <h3 className="font-black text-lg text-white uppercase tracking-wider mb-2">Efficiency</h3>
             <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mb-6">Loyalty Index</p>
-            
+
             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-white/60">
@@ -356,41 +362,43 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* Categories */}
+        {/* Categories Split */}
         <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm lg:col-span-1">
           <div className="flex items-center gap-3 mb-6">
             <BarChart3 className="text-accent-blue" size={18} />
-            <h3 className="font-black text-base text-text-main uppercase tracking-tight">Split</h3>
+            <h3 className="font-black text-base text-text-main uppercase tracking-tight">Category Split</h3>
           </div>
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={advancedStats.categoryRevenue} layout="vertical">
-                <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 9, fontWeight: 800, fill: '#64748b' }}
-                  width={70}
-                />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    fontSize: '9px',
-                    fontWeight: '800'
-                  }}
-                />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {advancedStats.categoryRevenue.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b'][index % 5]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-56 w-full min-h-[14rem]">
+            {isMounted && !loading && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={advancedStats.categoryRevenue} layout="vertical">
+                  <XAxis type="number" hide />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 9, fontWeight: 800, fill: '#64748b' }}
+                    width={70}
+                  />
+                  <Tooltip
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                      fontSize: '9px',
+                      fontWeight: '800'
+                    }}
+                  />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    {advancedStats.categoryRevenue.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b'][index % 5]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -408,9 +416,9 @@ const DashboardHome = () => {
                   <span className="text-indigo-500">{loc.value} users</span>
                 </div>
                 <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000" 
-                    style={{ width: `${(loc.value / stats[2].value.replace(/,/g, '')) * 100 || 0}%` }}
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000"
+                    style={{ width: `${(loc.value / (stats[2]?.value?.replace(/[^0-9]/g, '') || 1)) * 100 || 0}%` }}
                   ></div>
                 </div>
               </div>
@@ -425,26 +433,26 @@ const DashboardHome = () => {
       {/* Critical Stock Alert - Full Width Section */}
       {lowStockItems.length > 0 && (
         <div className="mt-6 bg-red-50 border border-red-100 rounded-[2rem] p-8 relative overflow-hidden group shadow-lg shadow-red-500/5">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
-           <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-              <div className="flex items-center gap-6">
-                 <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-md animate-bounce duration-[2000ms]">
-                    <AlertCircle className="text-red-500" size={32} />
-                 </div>
-                 <div>
-                    <h3 className="text-xl font-black text-red-900 uppercase tracking-tight">Critical Inventory Breach</h3>
-                    <p className="text-[10px] text-red-600 font-bold uppercase tracking-[0.2em] mt-1 italic">
-                       {lowStockItems.length} Products have fallen below threshold constraints
-                    </p>
-                 </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-md animate-bounce duration-[2000ms]">
+                <AlertCircle className="text-red-500" size={32} />
               </div>
-              <button 
-                 onClick={() => navigate('/bulk-inventory')}
-                 className="px-8 py-4 bg-red-500 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 active:scale-95"
-              >
-                 Enter Logistics Control
-              </button>
-           </div>
+              <div>
+                <h3 className="text-xl font-black text-red-900 uppercase tracking-tight">Critical Inventory Breach</h3>
+                <p className="text-[10px] text-red-600 font-bold uppercase tracking-[0.2em] mt-1 italic">
+                  {lowStockItems.length} Products have fallen below threshold constraints
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/bulk-inventory')}
+              className="px-8 py-4 bg-red-500 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-red-600 transition-all shadow-xl shadow-red-500/20 active:scale-95"
+            >
+              Enter Logistics Control
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -213,7 +213,8 @@ const CouponsPage = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto text-left">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto text-left">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
@@ -314,6 +315,91 @@ const CouponsPage = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {loading ? (
+                        Array(3).fill(0).map((_, i) => (
+                            <div key={i} className="p-4 space-y-3 animate-pulse">
+                                <div className="flex justify-between items-center">
+                                    <div className="h-4 bg-slate-100 rounded-full w-24"></div>
+                                    <div className="h-6 bg-slate-100 rounded-lg w-16"></div>
+                                </div>
+                                <div className="h-8 bg-slate-100 rounded-xl w-full"></div>
+                            </div>
+                        ))
+                    ) : filteredCoupons.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <Ticket className="mx-auto text-slate-200 mb-4" size={48} />
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No coupons found</p>
+                        </div>
+                    ) : (
+                        filteredCoupons.map(coupon => (
+                            <div key={coupon.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="font-black text-primary-900 text-sm tracking-wider uppercase leading-none">{coupon.code}</h3>
+                                        <div className="text-[9px] font-bold text-slate-400 mt-1.5 flex items-center gap-1 uppercase">
+                                            <Calendar size={10} /> Created {new Date(coupon.createdAt).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                    <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                                        isExpired(coupon.expiryDate) 
+                                            ? 'bg-red-50 text-red-600 border-red-100' 
+                                            : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    }`}>
+                                        {isExpired(coupon.expiryDate) ? 'EXPIRED' : 'ACTIVE'}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-50">
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Benefit</p>
+                                        <div className="flex items-center gap-1.5">
+                                            {coupon.type === 'PERCENTAGE' ? (
+                                                <Percent size={14} className="text-sky-600" />
+                                            ) : (
+                                                <Banknote size={14} className="text-emerald-600" />
+                                            )}
+                                            <span className="text-xs font-black text-text-main">
+                                                {coupon.type === 'PERCENTAGE' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Requirement</p>
+                                        <p className="text-xs font-bold text-text-main">Min. Spend ₹{coupon.minAmount}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1">
+                                    <div className="flex flex-col gap-1.5 min-w-[120px]">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-primary-900">
+                                            <BarChart3 size={12} className="text-accent-blue" />
+                                            {coupon.usedCount} {coupon.usageLimit ? `/ ${coupon.usageLimit}` : 'Redemptions'}
+                                        </div>
+                                        {coupon.usageLimit && (
+                                            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full bg-accent-blue rounded-full`} 
+                                                    style={{ width: `${Math.min(100, (coupon.usedCount / coupon.usageLimit) * 100)}%` }}
+                                                ></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => openEdit(coupon)} className="p-2 bg-slate-100 text-slate-600 rounded-lg border border-slate-200">
+                                            <Edit2 size={14} />
+                                        </button>
+                                        <button onClick={() => handleDelete(coupon.id)} className="p-2 bg-red-50 text-red-600 rounded-lg border border-red-100">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

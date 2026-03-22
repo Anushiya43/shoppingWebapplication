@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Check, Save, X, Search, Filter, AlertCircle, ChevronDown, Percent } from 'lucide-react';
+import { Layers, Check, Save, X, Search, Filter, AlertCircle, ChevronDown, Percent, Package } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 import { getProducts, bulkUpdateProducts } from '../api/products';
 import { getCategories } from '../api/categories';
@@ -141,22 +141,22 @@ const BulkInventoryPage = () => {
           <p className="text-[10px] text-text-muted font-bold opacity-60 uppercase tracking-widest">Rapid inventory & pricing Management</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative group">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative group flex-1 sm:flex-initial">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-accent-blue transition-colors" size={14} />
             <input
               type="text"
               placeholder="Filter by name or SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:bg-white transition-all w-64 shadow-inner"
+              className="pl-9 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:bg-white transition-all w-full sm:w-64 shadow-inner"
             />
           </div>
 
           <button
             onClick={() => setIsBulkEditOpen(true)}
             disabled={selectedIds.length === 0}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg ${
+            className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg ${
               selectedIds.length > 0 
                 ? 'bg-slate-900 text-white hover:bg-slate-800 hover:shadow-xl active:scale-95' 
                 : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-50 shadow-none'
@@ -172,8 +172,8 @@ const BulkInventoryPage = () => {
       {isBulkEditOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsBulkEditOpen(false)}></div>
-          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden border border-slate-200 animate-in zoom-in duration-300">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="bg-white rounded-[2rem] sm:rounded-[3rem] shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden border border-slate-200 animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+            <div className="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 flex-shrink-0">
               <div>
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Bulk Configuration</h3>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Applying changes to {selectedIds.length} items</p>
@@ -186,7 +186,7 @@ const BulkInventoryPage = () => {
               </button>
             </div>
 
-            <div className="p-8 grid grid-cols-2 gap-6">
+            <div className="p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6 overflow-y-auto custom-scrollbar">
               <div className="space-y-4">
                  <div>
                     <div className="flex items-center justify-between ml-4">
@@ -267,14 +267,14 @@ const BulkInventoryPage = () => {
               </div>
             </div>
 
-            <div className="p-8 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+            <div className="p-6 sm:p-8 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
               <div className="flex items-center gap-3 text-white/40">
                 <AlertCircle size={20} className="text-amber-500" />
                 <p className="text-[10px] font-black uppercase tracking-widest leading-none">Changes are permanent<br/>and apply instantly</p>
               </div>
               <button
                 onClick={handleBulkUpdate}
-                className="flex items-center gap-3 px-8 py-4 bg-white text-slate-900 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-100 transition-all active:scale-95 shadow-xl shadow-white/10"
+                className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-white text-slate-900 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-100 transition-all active:scale-95 shadow-xl shadow-white/10"
               >
                 <Save size={18} />
                 Deploy Changes
@@ -284,9 +284,10 @@ const BulkInventoryPage = () => {
         </div>
       )}
 
-      {/* Inventory Table */}
-      <div className="bg-white border border-slate-200/60 rounded-[2.5rem] shadow-xl overflow-hidden backdrop-blur-sm">
-        <div className="overflow-x-auto">
+      {/* Inventory Container */}
+      <div className="bg-white border border-slate-200/60 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-xl overflow-hidden backdrop-blur-sm">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -373,6 +374,83 @@ const BulkInventoryPage = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-slate-100">
+           <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                 <input 
+                    type="checkbox"
+                    checked={selectedIds.length === products.length && products.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-5 h-5 rounded-lg border-2 border-slate-200 text-accent-blue focus:ring-accent-blue transition-all"
+                  />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select All</span>
+              </label>
+              <span className="text-[10px] font-black text-accent-blue uppercase tracking-widest">{selectedIds.length} Selected</span>
+           </div>
+           {loading ? (
+             [...Array(3)].map((_, i) => (
+                <div key={i} className="p-4 space-y-3 animate-pulse">
+                   <div className="flex gap-3">
+                      <div className="w-12 h-12 bg-slate-100 rounded-xl"></div>
+                      <div className="space-y-2">
+                         <div className="h-4 bg-slate-100 rounded-full w-32"></div>
+                         <div className="h-3 bg-slate-100 rounded-full w-20"></div>
+                      </div>
+                   </div>
+                </div>
+             ))
+           ) : filteredProducts.map(product => (
+             <div 
+               key={product.id} 
+               onClick={() => handleSelectOne(product.id)}
+               className={`p-4 space-y-4 hover:bg-slate-50 transition-colors ${selectedIds.includes(product.id) ? 'bg-accent-blue/[0.03]' : ''}`}
+             >
+                <div className="flex items-start gap-3">
+                   <div onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox"
+                        checked={selectedIds.includes(product.id)}
+                        onChange={() => handleSelectOne(product.id)}
+                        className="w-5 h-5 rounded-lg border-2 border-slate-200 text-accent-blue focus:ring-accent-blue transition-all"
+                      />
+                   </div>
+                   <div className="w-12 h-12 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex-shrink-0">
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Layers size={20} className="m-auto mt-3 text-slate-200" />
+                      )}
+                   </div>
+                   <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-slate-900 tracking-tight truncate">{product.name}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">SKU: {product.sku || 'N/A'}</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                   <div className="space-y-1">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Stock Status</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest ${
+                          product.stock <= product.minStock 
+                            ? 'bg-red-50 text-red-600 border border-red-100' 
+                            : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                        }`}>
+                          {product.stock} Units
+                        </span>
+                        {product.stock <= product.minStock && <AlertCircle size={10} className="text-red-500" />}
+                      </div>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Current Price</p>
+                      <p className="text-[11px] font-black text-slate-900 italic">₹{Number(product.price).toLocaleString()}</p>
+                   </div>
+                </div>
+             </div>
+           ))}
         </div>
         
         {!loading && filteredProducts.length === 0 && (

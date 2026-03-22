@@ -239,7 +239,8 @@ const InventoryPage = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto text-left">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto text-left">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
@@ -262,7 +263,7 @@ const InventoryPage = () => {
                                                 <div className="h-2 bg-slate-100 rounded-full w-20"></div>
                                             </div>
                                         </td>
-                                        <td colSpan="4" className="px-6"><div className="h-4 bg-slate-50 rounded-full w-full"></div></td>
+                                        <td colSpan="5" className="px-6"><div className="h-4 bg-slate-50 rounded-full w-full"></div></td>
                                     </tr>
                                 ))
                             ) : products.map(prod => (
@@ -341,6 +342,92 @@ const InventoryPage = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {loading ? (
+                        Array(3).fill(0).map((_, i) => (
+                            <div key={i} className="p-4 space-y-4 animate-pulse">
+                                <div className="flex gap-4">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-lg"></div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 bg-slate-100 rounded-full w-3/4"></div>
+                                        <div className="h-3 bg-slate-100 rounded-full w-1/2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : products.length > 0 ? (
+                        products.map(prod => (
+                            <div key={prod.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+                                <div className="flex gap-4">
+                                    <div className="w-20 h-20 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200 p-1">
+                                        {prod.imageUrl ? (
+                                            <img src={prod.imageUrl} alt={prod.name} className="w-full h-full object-contain" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                <ImageIcon size={24} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <h3 className="font-bold text-text-main text-sm line-clamp-2 leading-tight">{prod.name}</h3>
+                                            <div className="flex gap-1 shrink-0">
+                                                <button onClick={() => openModal(prod)} className="p-1.5 text-slate-400 hover:text-accent-blue hover:bg-accent-blue/5 rounded-md">
+                                                    <Edit2 size={14} />
+                                                </button>
+                                                <button onClick={() => handleDelete(prod.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] font-bold text-text-muted mt-1 uppercase tracking-tight">SKU-{prod.id.slice(-6)}</p>
+                                        
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <span className="px-2 py-0.5 bg-slate-100 text-text-muted rounded-md text-[9px] font-bold uppercase tracking-wider border border-slate-200">
+                                                {prod.category?.name || 'Uncategorized'}
+                                            </span>
+                                            {prod.brand && (
+                                                <span className="px-2 py-0.5 bg-accent-blue/5 text-accent-blue rounded-md text-[9px] font-bold uppercase tracking-wider border border-accent-blue/10">
+                                                    {prod.brand.name}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">Price</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-black text-text-main text-base">₹{prod.price}</span>
+                                            {prod.discountPercentage > 0 && (
+                                                <span className="text-emerald-600 text-[10px] font-bold">-{prod.discountPercentage}%</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className={`flex flex-col items-end px-3 py-1.5 rounded-lg border ${
+                                        prod.stock > (prod.minStock || 5) ? 'bg-emerald-50/50 border-emerald-100' : 'bg-red-50/50 border-red-100'
+                                    }`}>
+                                        <span className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-1">Available Stock</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${prod.stock > (prod.minStock || 5) ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+                                            <span className={`text-[11px] font-black ${prod.stock > (prod.minStock || 5) ? 'text-emerald-700' : 'text-red-700'}`}>
+                                                {prod.stock} Units
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="p-12 text-center">
+                            <Package className="mx-auto text-slate-200 mb-4" size={48} />
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No products found</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Pagination */}

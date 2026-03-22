@@ -130,7 +130,8 @@ const CategoriesPage = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto text-left">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto text-left">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
@@ -190,6 +191,47 @@ const CategoriesPage = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {loading ? (
+                        Array(3).fill(0).map((_, i) => (
+                            <div key={i} className="p-4 space-y-3 animate-pulse">
+                                <div className="h-4 bg-slate-100 rounded-full w-32"></div>
+                                <div className="h-3 bg-slate-100 rounded-full w-full"></div>
+                                <div className="h-3 bg-slate-100 rounded-full w-20"></div>
+                            </div>
+                        ))
+                    ) : filteredCategories.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <Plus className="mx-auto text-slate-200 mb-4" size={48} />
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No categories found</p>
+                        </div>
+                    ) : (
+                        filteredCategories.map(cat => (
+                            <div key={cat.id} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <h3 className="font-bold text-text-main text-sm">{cat.name}</h3>
+                                        <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest tracking-tighter">ID: {cat.id.slice(-8)}</p>
+                                    </div>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-text-muted border border-slate-200">
+                                        {cat._count?.products || 0} items
+                                    </span>
+                                </div>
+                                <p className="text-text-muted text-xs font-medium leading-relaxed line-clamp-2">{cat.description}</p>
+                                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-50">
+                                    <button onClick={() => openEdit(cat)} className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-slate-100">
+                                        <Edit2 size={12} /> Edit
+                                    </button>
+                                    <button onClick={() => handleDelete(cat.id)} className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-red-100">
+                                        <Trash2 size={12} /> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 

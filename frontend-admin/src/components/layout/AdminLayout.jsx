@@ -26,7 +26,7 @@ const AdminLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 w-64 bg-sidebar-navy text-white p-6 z-50 transition-all duration-300 transform
+        fixed inset-y-0 left-0 w-64 bg-sidebar-navy text-white p-6 z-50 transition-all duration-300 transform overflow-y-auto
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex items-center justify-between mb-10 lg:block">
@@ -75,7 +75,7 @@ const AdminLayout = ({ children }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 w-full min-w-0 bg-bg-main">
+      <main className="flex-1 w-full min-w-0 bg-bg-main lg:ml-64">
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 lg:px-10 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button

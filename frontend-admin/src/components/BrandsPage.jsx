@@ -137,7 +137,8 @@ const BrandsPage = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto text-left">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto text-left">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
@@ -208,6 +209,63 @@ const BrandsPage = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {loading ? (
+                        Array(3).fill(0).map((_, i) => (
+                            <div key={i} className="p-4 space-y-3 animate-pulse">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-100 rounded-lg"></div>
+                                    <div className="h-4 bg-slate-100 rounded-full w-24"></div>
+                                </div>
+                                <div className="h-3 bg-slate-100 rounded-full w-full"></div>
+                                <div className="h-3 bg-slate-100 rounded-full w-20"></div>
+                            </div>
+                        ))
+                    ) : filteredBrands.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <Building2 className="mx-auto text-slate-200 mb-4" size={48} />
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No brands found</p>
+                        </div>
+                    ) : (
+                        filteredBrands.map(brand => (
+                            <div key={brand.id} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-xl bg-slate-50 flex-shrink-0 flex items-center justify-center border border-slate-200 overflow-hidden p-1.5">
+                                            {brand.logoUrl ? (
+                                                <img src={brand.logoUrl} alt={brand.name} className="w-full h-full object-contain" />
+                                            ) : (
+                                                <Building2 size={20} className="text-slate-300" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-text-main text-sm leading-tight">{brand.name}</h3>
+                                            <p className="text-[9px] font-bold text-text-muted uppercase tracking-tighter mt-0.5">ID: {brand.id.slice(-8)}</p>
+                                        </div>
+                                    </div>
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-text-muted border border-slate-200 shrink-0">
+                                        {brand._count?.products || 0} items
+                                    </span>
+                                </div>
+                                
+                                <p className="text-text-muted text-xs font-medium leading-relaxed line-clamp-2">
+                                    {brand.description || 'No description provided for this brand.'}
+                                </p>
+
+                                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-50">
+                                    <button onClick={() => openEdit(brand)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                                        <Edit2 size={12} /> Edit Brand
+                                    </button>
+                                    <button onClick={() => handleDelete(brand.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-red-100">
+                                        <Trash2 size={12} /> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
 
