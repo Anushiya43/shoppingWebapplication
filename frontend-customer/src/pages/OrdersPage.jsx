@@ -40,6 +40,30 @@ const OrdersPage = () => {
         }
       }
 
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      
+      // DEVELOPMENT MOCK MODE
+      if (!razorpayKey || razorpayKey === 'rzp_test_placeholder') {
+        showNotification('Development Mode: Simulating Payment...', 'info');
+        setTimeout(async () => {
+          try {
+            await api.post('/payments/verify', {
+              orderId: order.id,
+              razorpay_order_id: razorpayOrderId || 'mock_order_id',
+              razorpay_payment_id: 'mock_payment_id',
+              razorpay_signature: 'mock_signature',
+            });
+            showNotification('Payment successful!', 'success');
+            fetchOrders();
+          } catch (err) {
+            showNotification('Mock payment failed', 'error');
+          } finally {
+            setPaying(null);
+          }
+        }, 1500);
+        return;
+      }
+
       const isLoaded = await loadRazorpay();
       if (!isLoaded) {
         showNotification('Razorpay SDK failed to load', 'error');
