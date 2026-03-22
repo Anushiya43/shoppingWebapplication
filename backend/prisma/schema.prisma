@@ -1,106 +1,91 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-
-enum Role {
-  ADMIN
-  CUSTOMER
-}
-
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
-enum CouponType {
-  PERCENTAGE
-  FIXED
-}
-
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
-  googleId     String?   @unique
   password     String?
   role         Role      @default(CUSTOMER)
   firstName    String
   lastName     String
   isBlocked    Boolean   @default(false)
-  phoneNumber  String?   @unique
-  refreshToken String?
-  orders       Order[]
-  addresses    Address[]
-  cart         Cart?
-  reviews      Review[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  googleId     String?   @unique
+  refreshToken String?
+  phoneNumber  String?   @unique
+  addresses    Address[]
+  cart         Cart?
+  orders       Order[]
+  reviews      Review[]
 }
 
 model Product {
-  id                 String      @id @default(uuid())
-  name               String      @unique
+  id                 String         @id @default(uuid())
+  name               String         @unique
   description        String
   price              Decimal
-  discountPercentage Decimal?    @default(0)
+  discountPercentage Decimal?       @default(0)
   stock              Int
-  minStock           Int         @default(5)
   categoryId         String
-  category           Category    @relation(fields: [categoryId], references: [id])
-  brandId            String?
-  brand              Brand?       @relation(fields: [brandId], references: [id])
   imageUrl           String
-  images             ProductImage[]
-  orderItems         OrderItem[]
-  cartItems          CartItem[]
-  reviews            Review[]
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-  isDeleted          Boolean     @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
   deletedAt          DateTime?
+  isDeleted          Boolean        @default(false)
+  minStock           Int            @default(5)
+  brandId            String?
+  cartItems          CartItem[]
+  orderItems         OrderItem[]
+  brand              Brand?         @relation(fields: [brandId], references: [id])
+  category           Category       @relation(fields: [categoryId], references: [id])
+  images             ProductImage[]
+  reviews            Review[]
+
+  @@index([categoryId, isDeleted])
+  @@index([brandId, isDeleted])
+  @@index([isDeleted, createdAt])
 }
 
 model Review {
   id         String   @id @default(uuid())
   rating     Int      @default(5)
   comment    String
-  isApproved Boolean  @default(true)
   productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  isApproved Boolean  @default(true)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId, isApproved])
+  @@index([userId])
 }
 
 model ProductImage {
   id        String   @id @default(uuid())
   url       String
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Category {
   id          String    @id @default(uuid())
   name        String
   description String
-  products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  isDeleted   Boolean   @default(false)
   deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+  products    Product[]
 }
 
 model Brand {
@@ -108,92 +93,95 @@ model Brand {
   name        String    @unique
   description String?
   logoUrl     String?
-  products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   isDeleted   Boolean   @default(false)
   deletedAt   DateTime?
+  products    Product[]
 }
 
 model Order {
   id              String      @id @default(uuid())
   userId          String
-  user            User        @relation(fields: [userId], references: [id])
   couponId        String?
-  coupon          Coupon?     @relation(fields: [couponId], references: [id])
   status          OrderStatus @default(PENDING)
+  discountAmount  Decimal     @default(0)
+  totalAmount     Decimal
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   shippingAddress String?
   trackingNumber  String?
   shippingCost    Decimal     @default(0)
-  discountAmount  Decimal     @default(0)
-  totalAmount     Decimal
+  coupon          Coupon?     @relation(fields: [couponId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
   orderItems      OrderItem[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
 }
 
 model OrderItem {
   id        String   @id @default(uuid())
   orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
   productId String
-  product   Product  @relation(fields: [productId], references: [id])
   quantity  Int
   price     Decimal
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
 }
 
 model Address {
   id          String   @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  fullName    String
-  phoneNumber String
   street      String
   city        String
-  district    String
   state       String
   zipCode     String
   country     String   @default("India")
-  label       String?  // e.g. "Home", "Work"
   isDefault   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  district    String
+  fullName    String
+  label       String?
+  phoneNumber String
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model Cart {
   id        String     @id @default(uuid())
   userId    String     @unique
-  user      User       @relation(fields: [userId], references: [id])
-  items     CartItem[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
 }
 
 model CartItem {
   id        String   @id @default(uuid())
   cartId    String
-  cart      Cart     @relation(fields: [cartId], references: [id])
   productId String
-  product   Product  @relation(fields: [productId], references: [id])
   quantity  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
 }
 
 model Coupon {
-  id          String     @id @default(uuid())
-  code        String     @unique
-  type        CouponType
-  value       Decimal
-  minAmount   Decimal    @default(0)
-  usageLimit  Int?
-  usedCount   Int        @default(0)
-  expiryDate  DateTime
-  orders      Order[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id         String     @id @default(uuid())
+  code       String     @unique
+  type       CouponType
+  value      Decimal
+  minAmount  Decimal    @default(0)
+  expiryDate DateTime
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  usageLimit Int?
+  usedCount  Int        @default(0)
+  orders     Order[]
 }
 
 model Otp {
@@ -212,4 +200,22 @@ model Banner {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
 }

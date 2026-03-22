@@ -25,6 +25,12 @@ const BulkInventoryPage = () => {
     brandId: '',
   });
 
+  const [modes, setModes] = useState({
+    price: 'fixed',
+    stock: 'fixed',
+    discountPercentage: 'fixed',
+  });
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -66,21 +72,31 @@ const BulkInventoryPage = () => {
     if (selectedIds.length === 0) return;
     
     // Clean bulk data - only send values that are not empty
-    const cleanData = {};
-    Object.keys(bulkData).forEach(key => {
-      if (bulkData[key] !== '') {
-        cleanData[key] = bulkData[key];
-      }
-    });
+    const payload = {};
+    if (bulkData.price !== '') {
+      if (modes.price === 'percentage') payload.priceAdj = { type: 'percentage', value: bulkData.price };
+      else payload.price = bulkData.price;
+    }
+    if (bulkData.stock !== '') {
+      if (modes.stock === 'percentage') payload.stockAdj = { type: 'percentage', value: bulkData.stock };
+      else payload.stock = bulkData.stock;
+    }
+    if (bulkData.discountPercentage !== '') {
+      if (modes.discountPercentage === 'percentage') payload.discountAdj = { type: 'percentage', value: bulkData.discountPercentage };
+      else payload.discountPercentage = bulkData.discountPercentage;
+    }
+    if (bulkData.minStock !== '') payload.minStock = bulkData.minStock;
+    if (bulkData.categoryId) payload.categoryId = bulkData.categoryId;
+    if (bulkData.brandId) payload.brandId = bulkData.brandId;
 
-    if (Object.keys(cleanData).length === 0) {
+    if (Object.keys(payload).length === 0) {
       showNotification('warning', 'No changes specified for bulk update');
       return;
     }
 
     try {
       showNotification('info', `Updating ${selectedIds.length} products...`);
-      await bulkUpdateProducts(selectedIds, cleanData);
+      await bulkUpdateProducts(selectedIds, payload);
       showNotification('success', 'Bulk update completed successfully');
       setIsBulkEditOpen(false);
       setBulkData({ price: '', stock: '', minStock: '', discountPercentage: '', categoryId: '', brandId: '' });
@@ -94,6 +110,27 @@ const BulkInventoryPage = () => {
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const ModeToggle = ({ field }) => (
+    <div className="flex bg-slate-100 p-1 rounded-xl w-fit ml-auto mb-2 border border-slate-200 shadow-inner">
+      <button
+        onClick={() => setModes({ ...modes, [field]: 'fixed' })}
+        className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${
+          modes[field] === 'fixed' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 opacity-60'
+        }`}
+      >
+        Set Fixed
+      </button>
+      <button
+        onClick={() => setModes({ ...modes, [field]: 'percentage' })}
+        className={`px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all ${
+          modes[field] === 'percentage' ? 'bg-accent-blue text-white shadow-md' : 'text-slate-400 opacity-60'
+        }`}
+      >
+        Adjust %
+      </button>
+    </div>
   );
 
   return (
@@ -152,20 +189,26 @@ const BulkInventoryPage = () => {
             <div className="p-8 grid grid-cols-2 gap-6">
               <div className="space-y-4">
                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 mb-2 block italic">Price Override (₹)</label>
+                    <div className="flex items-center justify-between ml-4">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block italic">Price Change {modes.price === 'percentage' ? '(%)' : '(₹)'}</label>
+                      <ModeToggle field="price" />
+                    </div>
                     <input 
                        type="number"
-                       placeholder="Leave blank for no change"
+                       placeholder={modes.price === 'percentage' ? "e.g. 10 for +10%, -5 for -5%" : "Leave blank for no change"}
                        value={bulkData.price}
                        onChange={(e) => setBulkData({...bulkData, price: e.target.value})}
                        className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all"
                     />
                  </div>
                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 mb-2 block italic">Stock Quantity</label>
+                    <div className="flex items-center justify-between ml-4">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block italic">Stock Update {modes.stock === 'percentage' ? '(%)' : '(QTY)'}</label>
+                      <ModeToggle field="stock" />
+                    </div>
                     <input 
                        type="number"
-                       placeholder="Leave blank for no change"
+                       placeholder={modes.stock === 'percentage' ? "e.g. 50 for +50%, -10 for -10%" : "Leave blank for no change"}
                        value={bulkData.stock}
                        onChange={(e) => setBulkData({...bulkData, stock: e.target.value})}
                        className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-accent-blue/10 focus:border-accent-blue outline-none transition-all"
@@ -206,12 +249,15 @@ const BulkInventoryPage = () => {
                     </select>
                  </div>
                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4 mb-2 block italic">Global Discount (%)</label>
+                    <div className="flex items-center justify-between ml-4">
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block italic">Discount Rate {modes.discountPercentage === 'percentage' ? '(Adj %)' : '(New %)'}</label>
+                      <ModeToggle field="discountPercentage" />
+                    </div>
                     <div className="relative group/input">
                       <Percent className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within/input:text-accent-pink transition-colors" size={16} />
                       <input 
                          type="number"
-                         placeholder="0 - 99"
+                         placeholder={modes.discountPercentage === 'percentage' ? "e.g. 10 for +10% of current disc" : "Fixed percentage (0-99)"}
                          value={bulkData.discountPercentage}
                          onChange={(e) => setBulkData({...bulkData, discountPercentage: e.target.value})}
                          className="w-full pl-12 pr-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-accent-pink/10 focus:border-accent-pink outline-none transition-all"

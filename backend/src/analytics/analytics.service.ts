@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
@@ -73,8 +74,8 @@ export class AnalyticsService {
         if (!product) return null;
         return {
           name: product.name,
-          price: product.price,
-          sales: item._sum.quantity,
+          price: Math.round(Number(product.price) * 100) / 100,
+          sales: item._sum.quantity || 0,
         };
       })
     ).then(items => items.filter(i => i !== null));
@@ -146,6 +147,36 @@ export class AnalyticsService {
       momGrowth = 100;
     }
 
+    // Daily Revenue for the selected range (last 7 or 30 days)
+    const dailyRevenueResults = await this.prisma.$queryRaw`
+      SELECT 
+        DATE("createdAt") as date,
+        SUM("totalAmount") as revenue
+      FROM "Order"
+      WHERE 
+        status = 'DELIVERED'
+        ${startDate ? Prisma.sql`AND "createdAt" >= ${startDate}` : Prisma.empty}
+      GROUP BY date
+      ORDER BY date ASC
+    `;
+
+    const dailyRevenue = (dailyRevenueResults as any[]).map(d => ({
+      date: new Date(d.date).toLocaleDateString(),
+      revenue: Number(d.revenue)
+    }));
+
+    // Today's Revenue specifically
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayResult = await this.prisma.order.aggregate({
+      where: {
+        status: 'DELIVERED',
+        createdAt: { gte: today }
+      },
+      _sum: { totalAmount: true }
+    });
+    const todayRevenue = todayResult._sum.totalAmount || 0;
+
     // Revenue by Category
     const categoryRevenue = await this.prisma.orderItem.groupBy({
       by: ['productId'],
@@ -176,7 +207,10 @@ export class AnalyticsService {
         acc.push({ name: curr.categoryName, value: curr.revenue });
       }
       return acc;
-    }, [] as { name: string, value: number }[]);
+    }, [] as { name: string, value: number }[]).map(c => ({
+      ...c,
+      value: Math.round(c.value * 100) / 100
+    }));
 
     return {
       totalRevenue: Number(totalRevenue),
@@ -191,34 +225,44 @@ export class AnalyticsService {
       monthlyRevenue: formattedMonthlyRevenue,
       momGrowth: Math.round(momGrowth),
       categoryRevenue: consolidatedCategoryStats,
+      todayRevenue: Number(todayRevenue),
+      dailyRevenue: dailyRevenue,
     };
   }
 
   async exportStats(range: string): Promise<string> {
     const stats = await this.getStats(range);
     
-    // Simple CSV generation
+    // Helper to escape CSV values
+    const escape = (val: any) => {
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+    };
+
     const rows = [
       ['Metric', 'Value'],
-      ['Total Revenue', `₹${stats.totalRevenue.toLocaleString()}`],
+      ['Total Revenue', `₹${stats.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`],
       ['Active Orders', stats.activeOrders],
       ['Total Users', stats.totalUsers],
       ['Conversion Rate', `${stats.conversionRate}%`],
       ['Abandoned Carts', stats.abandonedCarts],
       ['Repeat Customer Rate', `${stats.repeatCustomerRate}%`],
-      ['Average Order Value', `₹${stats.avgOrderValue.toLocaleString()}`],
+      ['Average Order Value', `₹${stats.avgOrderValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`],
       ['MoM Growth', `${stats.momGrowth}%`],
       [''],
       ['Category Split'],
-      ...stats.categoryRevenue.map(c => [c.name, `₹${c.value}`]),
+      ...stats.categoryRevenue.map(c => [c.name, `₹${c.value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`]),
       [''],
       ['Location Split'],
       ...stats.locationStats.map(l => [l.name, l.value]),
       [''],
       ['Top Products'],
-      ...stats.topProducts.map(p => [p.name, `${p.sales} sold`, `₹${p.price}`]),
+      ...stats.topProducts.map(p => [(p as any).name, `${(p as any).sales} sold`, `₹${(p as any).price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`]),
     ];
 
-    return rows.map(r => r.join(',')).join('\n');
+    // Add Byte Order Mark (BOM) for Excel UTF-8 support
+    const bom = '\ufeff';
+    const csvContent = rows.map(r => r.map(escape).join(',')).join('\n');
+    return bom + csvContent;
   }
 }

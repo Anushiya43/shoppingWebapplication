@@ -64,7 +64,19 @@ export class ProductsService {
         include: { 
           category: true,
           brand: true,
-          images: true 
+          images: true,
+          reviews: {
+            where: { isApproved: true } as any,
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
         },
         skip,
         take,
@@ -158,41 +170,83 @@ export class ProductsService {
   }
 
   async getLowStock() {
-    return this.prisma.product.findMany({
-      where: {
-        isDeleted: false,
-        stock: {
-          lte: this.prisma.product.fields.minStock as any, // This might not work directly in where
-        },
-      },
-      include: { category: true, brand: true },
-    });
-  }
-
-  // Workaround for stock <= minStock
-  async getLowStockFixed() {
+    // Standard Prisma doesn't support col <= other_col directly in where
+    // So we fetch all and filter, or use raw query. Filter is safer for now.
     const products = await this.prisma.product.findMany({
       where: { isDeleted: false },
       include: { category: true, brand: true },
     });
-    return products.filter(p => p.stock <= p.minStock);
+    return products.filter(p => Number(p.stock) <= Number(p.minStock));
   }
 
-  async batchUpdate(ids: string[], data: UpdateProductDto) {
-    const { price, stock, minStock, discountPercentage } = data;
-    
-    return this.prisma.product.updateMany({
-      where: {
-        id: { in: ids },
-      },
-      data: {
-        ...(price !== undefined && { price: new Prisma.Decimal(price) }),
-        ...(stock !== undefined && { stock: Number(stock) }),
-        ...(minStock !== undefined && { minStock: Number(minStock) }),
-        ...(discountPercentage !== undefined && { discountPercentage: new Prisma.Decimal(discountPercentage) }),
-        ...(data.categoryId && { categoryId: data.categoryId }),
-        ...(data.brandId && { brandId: data.brandId }),
-      },
+  async batchUpdate(ids: string[], data: any) {
+    const { 
+      price, priceAdj, 
+      stock, stockAdj, 
+      minStock, 
+      discountPercentage, discountAdj,
+      categoryId, brandId 
+    } = data;
+
+    // Simple overrides can use updateMany if no adjustments are present
+    if (!priceAdj && !stockAdj && !discountAdj) {
+      const updateData: any = {};
+      if (price !== undefined) updateData.price = new Prisma.Decimal(price);
+      if (stock !== undefined) updateData.stock = Number(stock);
+      if (minStock !== undefined) updateData.minStock = Number(minStock);
+      if (discountPercentage !== undefined) updateData.discountPercentage = new Prisma.Decimal(discountPercentage);
+      if (categoryId) updateData.categoryId = categoryId;
+      if (brandId) updateData.brandId = brandId;
+
+      return this.prisma.product.updateMany({
+        where: { id: { in: ids } },
+        data: updateData,
+      });
+    }
+
+    // Relative adjustments require fetching individual records
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids } },
     });
+
+    return this.prisma.$transaction(
+      products.map((product) => {
+        const productUpdate: any = {};
+        
+        // Apply fixed overrides first
+        if (price !== undefined) productUpdate.price = new Prisma.Decimal(price);
+        if (stock !== undefined) productUpdate.stock = Number(stock);
+        if (minStock !== undefined) productUpdate.minStock = Number(minStock);
+        if (discountPercentage !== undefined) productUpdate.discountPercentage = new Prisma.Decimal(discountPercentage);
+        if (categoryId) productUpdate.categoryId = categoryId;
+        if (brandId) productUpdate.brandId = brandId;
+
+        // Apply relative adjustments (overrides fixed if both present, but UI should prevent duality)
+        if (priceAdj) {
+          const currentPrice = Number(product.price);
+          productUpdate.price = priceAdj.type === 'percentage' 
+            ? new Prisma.Decimal(currentPrice * (1 + Number(priceAdj.value) / 100))
+            : new Prisma.Decimal(currentPrice + Number(priceAdj.value));
+        }
+
+        if (stockAdj) {
+          productUpdate.stock = stockAdj.type === 'percentage'
+            ? Math.round(Number(product.stock) * (1 + Number(stockAdj.value) / 100))
+            : Number(product.stock) + Number(stockAdj.value);
+        }
+
+        if (discountAdj) {
+          const currentDisc = Number(product.discountPercentage || 0);
+          productUpdate.discountPercentage = discountAdj.type === 'percentage'
+            ? new Prisma.Decimal(currentDisc * (1 + Number(discountAdj.value) / 100))
+            : new Prisma.Decimal(currentDisc + Number(discountAdj.value));
+        }
+
+        return this.prisma.product.update({
+          where: { id: product.id },
+          data: productUpdate,
+        });
+      }),
+    );
   }
 }

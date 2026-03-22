@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../context/NotificationContext';
 import { getStats, exportStats } from '../../api/analytics';
 import { getLowStock } from '../../api/products';
+import { Package, BarChart3, AlertCircle, TrendingUp, Users, ShoppingBag, Target, Star, MoreHorizontal, Download } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -22,6 +23,7 @@ const DashboardHome = () => {
     { label: 'Total Revenue', value: '₹0', change: '--', icon: <TrendingUp size={20} className="text-emerald-500" />, trend: 'up', color: 'bg-emerald-50' },
     { label: 'Active Orders', value: '0', change: '--', icon: <ShoppingBag size={20} className="text-accent-blue" />, trend: 'up', color: 'bg-blue-50' },
     { label: 'Total Users', value: '0', change: '--', icon: <Users size={20} className="text-indigo-500" />, trend: 'up', color: 'bg-indigo-50' },
+    { label: "Today's Revenue", value: '₹0', change: 'Live', icon: <BarChart3 size={20} className="text-accent-pink" />, trend: 'up', color: 'bg-pink-50' },
   ]);
   const [chartData, setChartData] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
@@ -74,13 +76,31 @@ const DashboardHome = () => {
           trend: 'up',
           color: 'bg-indigo-50'
         },
+        { 
+          label: "Today's Revenue", 
+          value: `₹${data.todayRevenue.toLocaleString()}`, 
+          change: 'Live', 
+          icon: <BarChart3 size={20} className="text-accent-pink" />, 
+          trend: 'up',
+          color: 'bg-pink-50'
+        },
       ]);
       
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const formattedChartData = data.monthlyRevenue.map((rev, i) => ({
-        name: months[i],
-        revenue: rev
-      }));
+      let formattedChartData;
+      
+      if (range !== 'all' && data.dailyRevenue && data.dailyRevenue.length > 0) {
+        formattedChartData = data.dailyRevenue.map(d => ({
+          name: d.date.split('/')[0] + '/' + d.date.split('/')[1], // Short date MM/DD
+          revenue: d.revenue
+        }));
+      } else {
+        formattedChartData = data.monthlyRevenue.map((rev, i) => ({
+          name: months[i],
+          revenue: rev
+        }));
+      }
+      
       setChartData(formattedChartData);
       setTopProducts(data.topProducts || []);
       setAdvancedStats({
@@ -166,7 +186,7 @@ const DashboardHome = () => {
 
     {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="lg:col-span-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, i) => (
             <div key={i} className={`p-4 bg-white border border-slate-200/60 rounded-2xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_-6px_rgba(0,0,0,0.08)] transition-all duration-500 group relative overflow-hidden ${loading ? 'animate-pulse' : ''}`}>
               <div className="flex justify-between items-start mb-4">
@@ -228,13 +248,7 @@ const DashboardHome = () => {
           </div>
           <div className="h-72 w-full -ml-4">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#ec4899" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="name" 
@@ -250,8 +264,9 @@ const DashboardHome = () => {
                   tickFormatter={(val) => `₹${val >= 1000 ? (val/1000).toFixed(0)+'k' : val}`}
                 />
                 <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ 
-                    borderRadius: '20px', 
+                    borderRadius: '16px', 
                     border: 'none', 
                     boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)',
                     fontSize: '11px',
@@ -261,19 +276,21 @@ const DashboardHome = () => {
                     padding: '12px 16px'
                   }}
                   itemStyle={{ color: '#fff' }}
-                  viewBox={{ x: 0, y: 0, width: 200, height: 100 }}
-                  cursor={{ stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '4 4' }}
                 />
-                <Area 
-                  type="monotone" 
+                <Bar 
                   dataKey="revenue" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={5}
-                  fillOpacity={1} 
-                  fill="url(#colorRev)" 
-                  animationDuration={2000}
-                />
-              </AreaChart>
+                  radius={[6, 6, 0, 0]}
+                  barSize={range === 'all' ? 30 : 20}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.revenue > 0 ? '#8b5cf6' : '#e2e8f0'} 
+                      className="hover:fill-primary-indigo transition-colors duration-300"
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

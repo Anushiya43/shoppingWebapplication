@@ -31,6 +31,9 @@ export class AuthService {
     });
 
     if (user) {
+      if (user.isBlocked) {
+        throw new UnauthorizedException('Your account is temporarily disabled. Please contact support at support@shoppingapp.com for assistance.');
+      }
       if (!user.googleId) {
         user = await this.prisma.user.update({
           where: { id: user.id },
@@ -60,7 +63,8 @@ export class AuthService {
         email: user.email, 
         role: user.role,
         firstName: user.firstName,
-        lastName: user.lastName 
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber
     };
 
     const [accessToken, refreshToken] = await Promise.all([
@@ -84,6 +88,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
         role: user.role
       }
     };
@@ -102,8 +107,8 @@ export class AuthService {
       where: { id: userId },
     });
 
-    if (!user || !user.refreshToken) {
-      throw new UnauthorizedException('Access Denied');
+    if (!user || user.isBlocked || !user.refreshToken) {
+      throw new UnauthorizedException('Your account is temporarily disabled. Please contact support at support@shoppingapp.com for assistance.');
     }
 
     const refreshTokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);

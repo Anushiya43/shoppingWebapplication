@@ -126,11 +126,13 @@ const OrderTrackingPage = () => {
                     <div className="px-4 py-2 bg-white/10 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest">
                       Status: {order.status}
                     </div>
+                    {/* Tracking ID Disabled
                     {order.trackingNumber && (
                       <div className="px-4 py-2 bg-white/10 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                         <Package size={12} /> {order.trackingNumber}
                       </div>
                     )}
+                    */}
                   </div>
                 </div>
               </div>

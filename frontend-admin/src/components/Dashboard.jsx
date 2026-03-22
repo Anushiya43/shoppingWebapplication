@@ -99,8 +99,8 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-      ) : (user && user.role !== 'ADMIN') || error === 'admin_only' ? (
-        /* Case 3: Logged in but not an admin OR admin_only trigger */
+      ) : (user && user.role !== 'ADMIN') || error === 'admin_only' || error === 'account_disabled' ? (
+        /* Case 3: Logged in but not an admin OR admin_only/blocked trigger */
         <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 relative z-10">
           <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} />
           <div className="max-w-xl w-full bg-white/5 backdrop-blur-2xl rounded-[3rem] p-10 shadow-2xl border border-white/10 text-center">
@@ -111,11 +111,13 @@ const Dashboard = () => {
             </div>
             <div className="space-y-4 mb-10 text-center flex flex-col items-center">
               <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight">
-                Admin <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400 text-6xl block mt-2">Only Access</span>
+                {error === 'account_disabled' ? 'Account' : 'Admin'} <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400 text-6xl block mt-2">{error === 'account_disabled' ? 'Status' : 'Only Access'}</span>
               </h1>
               <div className="h-1 w-24 bg-gradient-to-r from-red-50 to-orange-500 mx-auto rounded-full mt-4"></div>
               <p className="text-slate-400 text-lg max-w-sm mx-auto leading-relaxed mt-4">
-                You do not have administrative privileges. Redirecting back to login in <span className="text-white font-bold text-2xl ml-1">{countdown}s</span>
+                {error === 'account_disabled' 
+                  ? 'Your account is temporarily disabled. Please contact support.' 
+                  : 'You do not have administrative privileges.'} Redirecting back to login in <span className="text-white font-bold text-2xl ml-1">{countdown}s</span>
               </p>
               <div className="w-full bg-white/10 h-1.5 rounded-full mt-4 overflow-hidden">
                 <div

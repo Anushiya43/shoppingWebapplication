@@ -13,7 +13,7 @@ export class OrdersService {
     private cartService: CartService,
     private couponsService: CouponsService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   private calculateShipping(totalAmount: number): number {
     if (totalAmount === 0) return 0;
@@ -45,7 +45,7 @@ export class OrdersService {
       }
 
       const price = Number(product.price);
-      const discountedPrice = product.discountPercentage 
+      const discountedPrice = product.discountPercentage
         ? price * (1 - Number(product.discountPercentage) / 100)
         : price;
 
@@ -64,7 +64,7 @@ export class OrdersService {
 
     if (createOrderDto.couponId) {
       validatedCoupon = await this.couponsService.findOne(createOrderDto.couponId);
-      
+
       if (!validatedCoupon) {
         throw new BadRequestException('Invalid coupon code');
       }
@@ -75,7 +75,7 @@ export class OrdersService {
       if (totalAmount < Number(validatedCoupon.minAmount)) {
         throw new BadRequestException(`Minimum purchase amount of ₹${validatedCoupon.minAmount} required`);
       }
-      
+
       const untypedCoupon = validatedCoupon as any;
       if (untypedCoupon.usageLimit !== null && untypedCoupon.usedCount >= untypedCoupon.usageLimit) {
         throw new BadRequestException('Coupon usage limit reached');

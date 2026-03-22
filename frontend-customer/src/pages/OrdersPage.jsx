@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Package } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
+import useCartStore from '../store/useCartStore';
 import { useNotification } from '../context/NotificationContext';
 
 import { useOrders } from '../hooks/useOrders';
@@ -10,7 +11,9 @@ const OrdersPage = () => {
   const user = useAuthStore(state => state.user);
   const { showNotification } = useNotification();
   const { orders, loading, error, cancelOrder } = useOrders();
+  const addItem = useCartStore(state => state.addItem);
   const navigate = useNavigate();
+  const [reordering, setReordering] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -26,6 +29,20 @@ const OrdersPage = () => {
       showNotification('Order cancelled successfully', 'success');
     } else {
       showNotification(result.message, 'error');
+    }
+  };
+  
+  const handleReorder = async (product) => {
+    try {
+      setReordering(product.id);
+      await addItem(product.id, 1);
+      showNotification(`${product.name} added to cart!`, 'success');
+      // Optional: auto-navigate to cart after 1.5s
+      // setTimeout(() => navigate('/cart'), 1500);
+    } catch (err) {
+      showNotification('Failed to add item to cart', 'error');
+    } finally {
+      setReordering(null);
     }
   };
 
@@ -136,9 +153,11 @@ const OrdersPage = () => {
                       <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border ${getStatusStyles(order.status)} animate-pulse-slow`}>
                         {order.status}
                       </div>
+                      {/* Tracking ID Disabled
                       {order.trackingNumber && (
                         <span className="text-xs font-bold text-text-muted bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">TRK: {order.trackingNumber}</span>
                       )}
+                      */}
                     </div>
                   </div>
 
@@ -155,9 +174,13 @@ const OrdersPage = () => {
                             <span className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-primary-900">{item.quantity}</span>
                           </p>
                           <div className="mt-6 flex gap-3">
-                            <button className="px-6 py-2.5 bg-primary-900 hover:bg-primary-800 text-white rounded-2xl text-[13px] font-black shadow-lg shadow-primary-900/10 transition-all active:scale-95">
-                              Order Again
-                            </button>
+                            <button 
+                                onClick={() => handleReorder(item.product)}
+                                disabled={reordering === item.product.id}
+                                className="px-6 py-2.5 bg-primary-900 hover:bg-primary-800 text-white rounded-2xl text-[13px] font-black shadow-lg shadow-primary-900/10 transition-all active:scale-95 disabled:opacity-50"
+                              >
+                                {reordering === item.product.id ? 'Adding...' : 'Order Again'}
+                              </button>
                             <button 
                               onClick={() => navigate(`/orders/${order.id}/track`)}
                               className="px-6 py-2.5 bg-white hover:bg-gray-50 text-primary-900 border border-gray-100 rounded-2xl text-[13px] font-black transition-all active:scale-90"

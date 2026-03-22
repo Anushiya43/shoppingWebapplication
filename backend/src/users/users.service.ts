@@ -24,6 +24,27 @@ export class UsersService {
     });
   }
 
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        phoneNumber: true,
+        isBlocked: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
   async toggleBlock(id: string, currentAdminId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },

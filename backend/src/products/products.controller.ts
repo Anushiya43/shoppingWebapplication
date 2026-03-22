@@ -82,12 +82,19 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   getLowStock() {
-    return this.productsService.getLowStockFixed();
+    return this.productsService.getLowStock();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
+  }
+
+  @Patch('bulk-update')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async bulkUpdate(@Body() bulkUpdateDto: BulkUpdateDto) {
+    return this.productsService.batchUpdate(bulkUpdateDto.ids, bulkUpdateDto.data);
   }
 
   @Patch(':id')
@@ -122,13 +129,6 @@ export class ProductsController {
       ...updateData,
       imageGallery: imageGallery.length > 0 ? imageGallery : undefined,
     });
-  }
-
-  @Patch('bulk-update')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  async bulkUpdate(@Body() bulkUpdateDto: BulkUpdateDto) {
-    return this.productsService.batchUpdate(bulkUpdateDto.ids, bulkUpdateDto.data);
   }
 
   @Delete(':id')

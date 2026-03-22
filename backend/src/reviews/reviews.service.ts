@@ -124,4 +124,46 @@ export class ReviewsService {
       }),
     );
   }
+
+  async findAll() {
+    const reviews = await this.prisma.review.findMany({
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return Promise.all(
+      reviews.map(async (review) => {
+        const orderCount = await this.prisma.orderItem.count({
+          where: {
+            productId: review.productId,
+            order: {
+              userId: review.userId,
+              status: { in: ['DELIVERED', 'SHIPPED', 'CONFIRMED'] },
+            },
+          },
+        });
+
+        return {
+          ...review,
+          isVerified: orderCount > 0,
+        };
+      }),
+    );
+  }
 }

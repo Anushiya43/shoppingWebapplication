@@ -1,6 +1,7 @@
 import { Controller, Get, Req, UseGuards, Res, Post, Body, UnauthorizedException, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
 import { GoogleAuthGuard } from './google-auth.guard';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
@@ -8,7 +9,10 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private usersService: UsersService,
+  ) {}
 
   @Get('google/customer')
   @UseGuards(GoogleAuthGuard)
@@ -62,7 +66,7 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Get('profile')
   async getProfile(@Req() req) {
-    return req.user;
+    return this.usersService.findOne(req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

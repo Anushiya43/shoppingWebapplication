@@ -31,6 +31,10 @@ export class PhoneService {
       where: { phoneNumber },
     });
 
+    if (user && user.isBlocked) {
+      throw new UnauthorizedException('Your account is temporarily disabled. Please contact support at support@shoppingapp.com for assistance.');
+    }
+
     // SIMULATED SMS
     console.log(`[SMS Service] Sending OTP ${otp} to ${phoneNumber}`);
 
@@ -67,16 +71,23 @@ export class PhoneService {
           role: 'CUSTOMER',
         },
       });
-    } else if (firstName || lastName) {
-      // Update name if provided and user already exists
-      const updateData: any = {};
-      if (firstName) updateData.firstName = firstName;
-      if (lastName) updateData.lastName = lastName;
+    } else {
+      // Check block status for existing user
+      if (user.isBlocked) {
+        throw new UnauthorizedException('Your account is temporarily disabled. Please contact support at support@shoppingapp.com for assistance.');
+      }
+      
+      if (firstName || lastName) {
+        // Update name if provided and user already exists
+        const updateData: any = {};
+        if (firstName) updateData.firstName = firstName;
+        if (lastName) updateData.lastName = lastName;
 
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: updateData,
-      });
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        });
+      }
     }
 
     // 3. Cleanup: Delete the OTP record

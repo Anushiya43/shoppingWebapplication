@@ -16,6 +16,13 @@ export class ReviewsController {
     return this.reviewsService.create(req.user.id, createReviewDto);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  findAll() {
+    return this.reviewsService.findAll();
+  }
+
   @Get('product/:productId')
   findByProduct(@Param('productId') productId: string, @Request() req) {
     const isAdmin = req.user?.role === 'ADMIN';

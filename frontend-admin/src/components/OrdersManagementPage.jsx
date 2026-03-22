@@ -344,6 +344,7 @@ const OrdersManagementPage = () => {
                                                 Current: {selectedOrder.status}
                                             </span>
                                             
+                                            {/* Tracking Number Disabled 
                                             <div className="flex flex-col gap-2">
                                                 <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-0.5">Tracking Number</label>
                                                 <div className="flex gap-2">
@@ -365,6 +366,7 @@ const OrdersManagementPage = () => {
                                                     </button>
                                                 </div>
                                             </div>
+                                            */}
                                         </div>
                                     </div>
                                 </div>
