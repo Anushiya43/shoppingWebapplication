@@ -126,6 +126,7 @@ export class OrdersService {
           // Attach razorpayOrderId to the response object for the controller to return
           (order as any).razorpayOrderId = razorpayOrder.id;
         } catch (error) {
+          console.error('Failed to create Razorpay order:', error);
           // If Razorpay order creation fails, the transaction will rollback
           throw new BadRequestException('Failed to initiate online payment. Please try again or use COD.');
         }

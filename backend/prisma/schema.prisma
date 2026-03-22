@@ -101,22 +101,22 @@ model Brand {
 }
 
 model Order {
-  id              String      @id @default(uuid())
+  id              String        @id @default(uuid())
   userId          String
   couponId        String?
-  status          OrderStatus @default(PENDING)
-  discountAmount  Decimal     @default(0)
+  status          OrderStatus   @default(PENDING)
+  discountAmount  Decimal       @default(0)
   totalAmount     Decimal
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
   shippingAddress String?
   trackingNumber  String?
-  shippingCost    Decimal     @default(0)
+  shippingCost    Decimal       @default(0)
   paymentMethod   PaymentMethod @default(COD)
   paymentStatus   PaymentStatus @default(PENDING)
   razorpayOrderId String?
-  coupon          Coupon?     @relation(fields: [couponId], references: [id])
-  user            User        @relation(fields: [userId], references: [id])
+  coupon          Coupon?       @relation(fields: [couponId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
   orderItems      OrderItem[]
 
   @@index([userId, createdAt])

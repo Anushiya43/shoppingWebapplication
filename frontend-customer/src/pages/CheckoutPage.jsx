@@ -10,12 +10,13 @@ const CheckoutPage = () => {
   const user = useAuthStore(state => state.user);
   const cart = useCartStore(state => state.cart);
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
-  const cartTotal = cart?.items?.reduce((acc, item) => {
+  const cartTotalRaw = cart?.items?.reduce((acc, item) => {
     const discountedPrice = item.product.discountPercentage 
         ? item.product.price * (1 - item.product.discountPercentage / 100)
         : item.product.price;
     return acc + (discountedPrice * item.quantity);
   }, 0) || 0;
+  const cartTotal = Math.round(cartTotalRaw * 100) / 100;
   const clearCart = useCartStore(state => state.clearCart);
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -146,7 +147,7 @@ const CheckoutPage = () => {
           showNotification('Development Mode: Simulating Payment...', 'info');
           setTimeout(async () => {
             try {
-              await api.post('/payments/verify', {
+              await api.post('/orders/verify-payment', {
                 orderId: res.data.id,
                 razorpay_order_id: res.data.razorpayOrderId || 'mock_order_id',
                 razorpay_payment_id: 'mock_payment_id',
@@ -179,7 +180,7 @@ const CheckoutPage = () => {
           handler: async (response) => {
             try {
               // Verify payment on backend (this also updates status to PAID)
-              await api.post('/payments/verify', {
+              await api.post('/orders/verify-payment', {
                 orderId: res.data.id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,

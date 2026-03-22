@@ -47,7 +47,7 @@ const OrdersPage = () => {
         showNotification('Development Mode: Simulating Payment...', 'info');
         setTimeout(async () => {
           try {
-            await api.post('/payments/verify', {
+            await api.post('/orders/verify-payment', {
               orderId: order.id,
               razorpay_order_id: razorpayOrderId || 'mock_order_id',
               razorpay_payment_id: 'mock_payment_id',

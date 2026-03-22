@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as Razorpay from 'razorpay';
+import Razorpay from 'razorpay';
 import * as crypto from 'crypto';
 
 @Injectable()
