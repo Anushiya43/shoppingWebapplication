@@ -18,6 +18,7 @@ import OrderTrackingPage from './pages/OrderTrackingPage';
 import OffersPage from './pages/OffersPage';
 import ProfilePage from './pages/ProfilePage';
 import AddressManagement from './pages/AddressManagement';
+import SupportPage from './pages/SupportPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // AuthSuccess removed in favor of direct store tokens if needed,
@@ -37,6 +38,8 @@ const AuthSuccess = () => {
     if (accessToken && refreshToken) {
       setTokens(accessToken, refreshToken, userId);
       initAuth().then(() => navigate('/'));
+    } else if (searchParams.get('error')) {
+      navigate(`/login?error=${searchParams.get('error')}`);
     }
   }, [searchParams, setTokens, initAuth, navigate]);
 
@@ -84,6 +87,7 @@ function App() {
               <Route path="/offers" element={<OffersPage />} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="/addresses" element={<ProtectedRoute><AddressManagement /></ProtectedRoute>} />
+              <Route path="/support" element={<SupportPage />} />
             </Routes>
           </React.Suspense>
         )}

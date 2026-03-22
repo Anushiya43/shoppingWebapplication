@@ -134,7 +134,7 @@ const BannersPage = () => {
     if (!window.confirm('Are you sure you want to delete this banner?')) return;
     
     try {
-      await api.delete(`/id/${id}`);
+      await api.delete(`/banners/${id}`);
       showNotification('success', 'Banner deleted successfully!');
       fetchBanners();
     } catch (err) {

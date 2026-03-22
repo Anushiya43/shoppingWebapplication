@@ -8,6 +8,7 @@ import { JwtStrategy } from './jwt.strategy';
 
 import { RolesGuard } from './roles.guard';
 import { PhoneModule } from './phone/phone.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PhoneModule } from './phone/phone.module';
       signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as any },
     }),
     PhoneModule,
+    UsersModule,
   ],
   providers: [AuthService, GoogleStrategy, JwtStrategy, RolesGuard],
   controllers: [AuthController],

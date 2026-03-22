@@ -178,9 +178,12 @@ const OrderSuccessPage = () => {
             <div className="bg-accent-blue/5 border border-accent-blue/10 rounded-[2rem] p-6 text-center">
               <p className="text-[10px] font-black text-accent-blue uppercase tracking-widest mb-2">Need Assistance?</p>
               <p className="text-xs text-primary-900 font-medium leading-relaxed">Our premium support team is available 24/7 for order inquiries.</p>
-              <button className="mt-4 text-accent-blue text-xs font-black uppercase tracking-wider hover:underline flex items-center gap-1 mx-auto">
+              <Link 
+                to="/support"
+                className="mt-4 text-accent-blue text-xs font-black uppercase tracking-wider hover:underline flex items-center gap-1 mx-auto"
+              >
                 Contact Support <ChevronRight size={14} />
-              </button>
+              </Link>
             </div>
           </div>
         </div>

@@ -8,4 +8,8 @@ export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
   shippingAddress: string;
+
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
 }

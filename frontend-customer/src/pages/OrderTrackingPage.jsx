@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Package, Truck, CheckCircle, ShieldCheck, 
-  Clock, Navigation, Shield, ShoppingBag, MapPin
+  Clock, Navigation, Shield, ShoppingBag, MapPin, CreditCard
 } from 'lucide-react';
 import { getOrderById } from '../api/orders';
 import useAuthStore from '../store/useAuthStore';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import { loadRazorpay } from '../utils/razorpay';
+import api from '../api/index';
 
 const OrderTrackingPage = () => {
   const { id } = useParams();
@@ -17,6 +19,7 @@ const OrderTrackingPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -39,6 +42,65 @@ const OrderTrackingPage = () => {
     }
   }, [id, user, authLoading, navigate]);
 
+  const handlePayNow = async () => {
+    setPaying(true);
+    try {
+      let razorpayOrderId = order.razorpayOrderId;
+
+      // If missing, fetch/create from backend
+      if (!razorpayOrderId) {
+        try {
+          const res = await api.get(`/orders/${order.id}/razorpay-order`);
+          razorpayOrderId = res.data.razorpayOrderId;
+        } catch (err) {
+          console.error(err);
+          setPaying(false);
+          return;
+        }
+      }
+
+      const isLoaded = await loadRazorpay();
+      if (!isLoaded) return;
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+        amount: Number(order.totalAmount) * 100,
+        currency: 'INR',
+        name: import.meta.env.VITE_APP_NAME || 'ModernShop',
+        description: `Order #${order.id}`,
+        order_id: razorpayOrderId,
+        handler: async (response) => {
+          try {
+            await api.post('/payments/verify', {
+              orderId: order.id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            window.location.reload();
+          } catch (err) {
+            console.error(err);
+          }
+        },
+        prefill: {
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          contact: user.phoneNumber,
+        },
+        theme: {
+          color: '#0f172a',
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPaying(false);
+    }
+  };
+
   const steps = [
     { id: 'PENDING', label: 'Order Placed', icon: ShoppingBag, time: order?.createdAt },
     { id: 'CONFIRMED', label: 'Confirmed', icon: ShieldCheck, time: order?.updatedAt },
@@ -55,7 +117,6 @@ const OrderTrackingPage = () => {
     const currentIndex = statusOrder.indexOf(currentStatus);
     const stepIndex = statusOrder.indexOf(stepId);
 
-    // Special handling for OUT_FOR_DELIVERY which isn't in our DB status yet
     if (stepId === 'OUT_FOR_DELIVERY') {
         return currentStatus === 'DELIVERED' ? 'completed' : 'pending';
     }
@@ -104,7 +165,7 @@ const OrderTrackingPage = () => {
                <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                  <Package size={32} className="text-red-400" />
                </div>
-               <h3 className="text-xl font-bold text-primary-900 mb-2">Voyage Interrupted</h3>
+               <h3 className="textxl font-bold text-primary-900 mb-2">Voyage Interrupted</h3>
                <p className="text-slate-500 mb-8 max-w-sm mx-auto font-medium">{error}</p>
                <button onClick={() => window.location.reload()} className="px-10 py-4 bg-primary-900 text-white rounded-full font-black uppercase tracking-widest text-xs hover:shadow-xl transition-all">Retry Link</button>
             </div>
@@ -126,11 +187,6 @@ const OrderTrackingPage = () => {
                     <div className="px-4 py-2 bg-white/10 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest">
                       Status: {order.status}
                     </div>
-                    {order.trackingNumber && (
-                      <div className="px-4 py-2 bg-white/10 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                        <Package size={12} /> {order.trackingNumber}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -144,7 +200,6 @@ const OrderTrackingPage = () => {
                     
                     return (
                       <div key={step.id} className="relative flex gap-8 group">
-                        {/* Line */}
                         {!isLast && (
                           <div className={`absolute left-[23px] top-[46px] w-[2px] h-[calc(100%+48px)] transition-all duration-1000 ${status === 'completed' ? 'bg-primary-900' : 'bg-slate-100'}`}>
                             {status === 'completed' && (
@@ -153,7 +208,6 @@ const OrderTrackingPage = () => {
                           </div>
                         )}
 
-                        {/* Icon Node */}
                         <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm ${
                           status === 'completed' ? 'bg-primary-900 text-white scale-110' : 
                           status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-300'
@@ -161,7 +215,6 @@ const OrderTrackingPage = () => {
                           <step.icon size={20} strokeWidth={status === 'completed' ? 3 : 2} />
                         </div>
 
-                        {/* Content */}
                         <div className="pt-2">
                           <h3 className={`text-sm font-black uppercase tracking-widest transition-colors duration-500 ${status === 'completed' ? 'text-primary-900' : 'text-slate-400'}`}>
                             {step.label}
@@ -181,7 +234,6 @@ const OrderTrackingPage = () => {
                 </div>
               </div>
 
-              {/* Order Details Mini-Summary */}
               <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 overflow-hidden">
                 <h3 className="text-xs font-black text-primary-900 uppercase tracking-widest mb-8 flex items-center gap-2">
                   <ShoppingBag size={14} /> Shipping Essentials
@@ -198,6 +250,37 @@ const OrderTrackingPage = () => {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Collector</p>
                     <p className="text-sm font-black text-primary-900">{user?.firstName} {user?.lastName}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Confirmed Identity</p>
+                  </div>
+                </div>
+                
+                <div className="mt-10 pt-8 border-t border-slate-50 flex flex-wrap gap-8">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Payment Method</p>
+                    <div className="flex items-center gap-2">
+                       <CreditCard size={14} className="text-primary-900" />
+                       <span className="text-xs font-black text-primary-900 uppercase tracking-tight">{order.paymentMethod || 'COD'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Payment Status</p>
+                    <div className="flex items-center gap-4">
+                      <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                        order.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                        order.paymentStatus === 'FAILED' ? 'bg-red-50 text-red-600 border-red-100' : 
+                        'bg-amber-50 text-amber-600 border-amber-100'
+                      }`}>
+                        {order.paymentStatus || 'PENDING'}
+                      </div>
+                      {order.paymentMethod === 'ONLINE' && order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED' && (
+                        <button 
+                          onClick={handlePayNow}
+                          disabled={paying}
+                          className="text-[10px] font-black uppercase tracking-widest text-accent-blue hover:underline disabled:opacity-50"
+                        >
+                          {paying ? 'Processing...' : 'Pay Now'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

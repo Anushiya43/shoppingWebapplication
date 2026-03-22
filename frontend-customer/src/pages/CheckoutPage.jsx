@@ -27,6 +27,7 @@ const CheckoutPage = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState([]);
   const [showOffers, setShowOffers] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('COD');
 
   useEffect(() => {
     if (!user) {
@@ -92,7 +93,21 @@ const CheckoutPage = () => {
   };
 
   const discountAmount = calculateDiscount();
-  const grandTotal = Math.max(0, cartTotal - discountAmount);
+  
+  const shippingThreshold = Number(import.meta.env.VITE_SHIPPING_THRESHOLD) || 500;
+  const shippingFee = cartTotal >= shippingThreshold ? 0 : (Number(import.meta.env.VITE_SHIPPING_COST) || 50);
+  
+  const grandTotal = Math.max(0, cartTotal - discountAmount + shippingFee);
+
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
@@ -104,6 +119,7 @@ const CheckoutPage = () => {
     try {
       const { createOrder } = await import('../api/orders');
       const { getAddresses } = await import('../api/address');
+      const api = (await import('../api/index')).default;
       
       const addrRes = await getAddresses();
       const selected = addrRes.data.find(a => a.id === selectedAddressId);
@@ -117,14 +133,63 @@ const CheckoutPage = () => {
       
       const res = await createOrder({ 
         shippingAddress: formattedAddress,
-        couponId: appliedCoupon?.id 
+        couponId: appliedCoupon?.id,
+        paymentMethod: paymentMethod
       });
-      await clearCart();
-      navigate(`/order-success/${res.data.id}`);
+
+      if (paymentMethod === 'ONLINE') {
+        const isLoaded = await loadRazorpay();
+        if (!isLoaded) {
+          showNotification('Razorpay SDK failed to load. Are you online?', 'error');
+          setPlacing(false);
+          return;
+        }
+
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+          amount: Number(res.data.totalAmount) * 100,
+          currency: 'INR',
+          name: import.meta.env.VITE_APP_NAME || 'ModernShop',
+          description: `Order #${res.data.id}`,
+          order_id: res.data.razorpayOrderId,
+          handler: async (response) => {
+            try {
+              // Verify payment on backend (this also updates status to PAID)
+              await api.post('/payments/verify', {
+                orderId: res.data.id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+
+              await clearCart();
+              navigate(`/order-success/${res.data.id}`);
+            } catch (err) {
+              showNotification('Payment verification failed. Please contact support.', 'error');
+            }
+          },
+          prefill: {
+            name: `${user.firstName} ${user.lastName}`,
+            email: user.email,
+            contact: user.phoneNumber,
+          },
+          theme: {
+            color: '#0f172a',
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        await clearCart();
+        navigate(`/order-success/${res.data.id}`);
+      }
     } catch (err) {
       showNotification('Failed to place order: ' + (err.response?.data?.message || 'Unknown error'), 'error');
     } finally {
-      setPlacing(false);
+      if (paymentMethod !== 'ONLINE') {
+        setPlacing(false);
+      }
     }
   };
 
@@ -178,14 +243,32 @@ const CheckoutPage = () => {
                   <span className="w-8 h-8 rounded-full bg-primary-900 text-white flex items-center justify-center font-black text-sm">2</span>
                   <h2 className="font-black text-primary-900 uppercase tracking-wider text-sm">Secure Payment</h2>
                 </div>
-                <div className="pl-11 flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                  <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                    <CreditCard size={24} className="text-accent-blue" />
-                  </div>
-                  <div>
-                    <p className="font-black text-primary-900">Pay on Delivery</p>
-                    <p className="text-xs text-text-muted font-medium">Cash, Card, or UPI on arrival</p>
-                  </div>
+                <div className="pl-11 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setPaymentMethod('COD')}
+                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${paymentMethod === 'COD' ? 'bg-accent-blue/5 border-accent-blue ring-2 ring-accent-blue/10' : 'bg-gray-50 border-gray-100 hover:bg-gray-100'}`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${paymentMethod === 'COD' ? 'bg-accent-blue text-white' : 'bg-white text-accent-blue'}`}>
+                      <CreditCard size={24} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-black text-primary-900 text-sm">Pay on Delivery</p>
+                      <p className="text-[10px] text-text-muted font-medium">Cash/UPI at your door</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => setPaymentMethod('ONLINE')}
+                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${paymentMethod === 'ONLINE' ? 'bg-accent-blue/5 border-accent-blue ring-2 ring-accent-blue/10' : 'bg-gray-50 border-gray-100 hover:bg-gray-100'}`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${paymentMethod === 'ONLINE' ? 'bg-accent-blue text-white' : 'bg-white text-accent-blue'}`}>
+                      <ShieldAlert size={24} />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-black text-primary-900 text-sm">Online Payment</p>
+                      <p className="text-[10px] text-text-muted font-medium">Secure Card/UPI Pay</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -318,7 +401,14 @@ const CheckoutPage = () => {
                       <span>-₹{discountAmount.toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm text-text-muted font-medium font-bold"><span>Premium Delivery</span><span className="text-green-500 font-bold">FREE</span></div>
+                  <div className="flex justify-between text-sm text-text-muted font-medium font-bold">
+                    <span>Premium Delivery</span>
+                    {shippingFee === 0 ? (
+                      <span className="text-green-500 font-bold">FREE</span>
+                    ) : (
+                      <span className="text-primary-900 font-bold">₹{shippingFee}</span>
+                    )}
+                  </div>
                   <div className="flex justify-between pt-4 mt-4 border-t border-gray-100 text-primary-900">
                     <span className="text-lg font-black uppercase tracking-tighter">Grand Total</span>
                     <span className="text-2xl font-black tracking-tighter">₹{grandTotal.toLocaleString()}</span>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { ShieldAlert, Smartphone, Hash, ArrowLeft, LogIn } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import Header from '../components/layout/Header';
@@ -22,6 +22,16 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
+  const [searchParams] = useSearchParams();
+
+  React.useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'account_disabled') {
+      setError('Your account is temporarily disabled. Please contact support at support@shoppingapp.com for assistance.');
+    } else if (errorParam === 'auth_failed') {
+      setError('Authentication failed. Please try again.');
+    }
+  }, [searchParams]);
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();

@@ -78,8 +78,12 @@ const Header = ({
         {/* Logo */}
         <Link to="/" className="flex items-center p-1 border border-transparent hover:border-white/20 rounded-md cursor-pointer shrink-0 transition-all">
           <div className="text-xl font-extrabold tracking-tight flex items-center gap-1">
-            <span className="bg-gradient-to-r from-accent-cyan to-accent-blue bg-clip-text text-transparent">Modern</span>
-            <span className="text-white">Shop</span>
+            <span className="bg-gradient-to-r from-accent-cyan to-accent-blue bg-clip-text text-transparent">
+              {(import.meta.env.VITE_APP_NAME || 'ModernShop').slice(0, 6)}
+            </span>
+            <span className="text-white">
+              {(import.meta.env.VITE_APP_NAME || 'ModernShop').slice(6)}
+            </span>
           </div>
         </Link>
 

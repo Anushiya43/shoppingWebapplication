@@ -4,7 +4,7 @@ import {
   Search, Filter, ChevronRight, Package, 
   Clock, Truck, CheckCircle, XCircle, 
   Eye, MoreVertical, ExternalLink, Download,
-  Calendar as CalendarIcon, RotateCcw
+  Calendar as CalendarIcon, RotateCcw, CreditCard, CheckCircle2
 } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 
@@ -35,10 +35,12 @@ const OrdersManagementPage = () => {
         fetchOrders();
     }, []);
 
-    const handleStatusChange = async (orderId, newStatus, trackingNumber) => {
+    const handleStatusChange = async (orderId, newStatus, trackingNumber, paymentStatus) => {
         try {
-            const updateData = { status: newStatus };
+            const updateData = {};
+            if (newStatus) updateData.status = newStatus;
             if (trackingNumber !== undefined) updateData.trackingNumber = trackingNumber;
+            if (paymentStatus) updateData.paymentStatus = paymentStatus;
             
             await updateOrderStatus(orderId, updateData);
             
@@ -85,7 +87,7 @@ const OrdersManagementPage = () => {
     });
 
     const exportToCSV = () => {
-        const headers = ['Order ID', 'Customer', 'Email', 'Total Amount', 'Status', 'Date', 'Shipping Address'];
+        const headers = ['Order ID', 'Customer', 'Email', 'Total Amount', 'Status', 'Payment Method', 'Payment Status', 'Date', 'Shipping Address'];
         const csvContent = [
             headers.join(','),
             ...filteredOrders.map(order => [
@@ -94,6 +96,8 @@ const OrdersManagementPage = () => {
                 order.user.email,
                 order.totalAmount,
                 order.status,
+                order.paymentMethod || 'COD',
+                order.paymentStatus || 'PENDING',
                 new Date(order.createdAt).toLocaleDateString(),
                 `"${order.shippingAddress || 'N/A'}"`
             ].join(','))
@@ -218,6 +222,7 @@ const OrdersManagementPage = () => {
                                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Order ID</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Customer</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Total</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Payment</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider">Date</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
@@ -244,6 +249,16 @@ const OrdersManagementPage = () => {
                                             </td>
                                             <td className="px-6 py-5">
                                                 <span className="font-bold text-text-main text-sm">₹{parseFloat(order.totalAmount).toLocaleString()}</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-text-main uppercase tracking-tight">{order.paymentMethod || 'COD'}</span>
+                                                    <span className={`text-[9px] font-bold uppercase ${
+                                                        order.paymentStatus === 'PAID' ? 'text-emerald-500' : 
+                                                        order.paymentStatus === 'FAILED' ? 'text-red-500' : 
+                                                        'text-amber-500'
+                                                    }`}>{order.paymentStatus || 'PENDING'}</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-5">
                                                 <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold border ${getStatusColor(order.status)}`}>
@@ -274,7 +289,8 @@ const OrdersManagementPage = () => {
                                                         >
                                                             <MoreVertical size={18} />
                                                         </button>
-                                                        <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden text-left">
+                                                        <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-20 overflow-hidden text-left">
+                                                            <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 italic text-[9px] font-black text-slate-400 uppercase tracking-widest">Update Order</div>
                                                             {['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map(status => (
                                                                 <button
                                                                     key={status}
@@ -284,6 +300,19 @@ const OrdersManagementPage = () => {
                                                                     Set to {status}
                                                                 </button>
                                                             ))}
+                                                            <div className="px-4 py-2 bg-slate-50 border-y border-slate-100 italic text-[9px] font-black text-slate-400 uppercase tracking-widest">Update Payment</div>
+                                                            <button
+                                                                onClick={() => handleStatusChange(order.id, undefined, undefined, 'PAID')}
+                                                                className={`w-full text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-50 hover:text-emerald-600 transition-colors ${order.paymentStatus === 'PAID' ? 'text-emerald-600 bg-emerald-50' : 'text-text-muted'}`}
+                                                            >
+                                                                Mark as Paid
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleStatusChange(order.id, undefined, undefined, 'PENDING')}
+                                                                className={`w-full text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-amber-50 hover:text-amber-600 transition-colors ${order.paymentStatus === 'PENDING' ? 'text-amber-600 bg-amber-50' : 'text-text-muted'}`}
+                                                            >
+                                                                Mark as Pending
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -332,39 +361,56 @@ const OrdersManagementPage = () => {
 
                                 <div className="space-y-4">
                                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 h-full">
-                                        <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-3">Logistics Update</h4>
+                                        <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-3">Logistics & Payment</h4>
                                         <div className="flex flex-col gap-5">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border w-fit ${getStatusColor(selectedOrder.status)}`}>
-                                                <div className={`w-1 h-1 rounded-full ${
-                                                    selectedOrder.status === 'PENDING' ? 'bg-amber-500 animate-pulse' : 
-                                                    selectedOrder.status === 'SHIPPED' ? 'bg-indigo-500' :
-                                                    selectedOrder.status === 'DELIVERED' ? 'bg-emerald-500' :
-                                                    'bg-slate-400'
-                                                }`}></div>
-                                                Current: {selectedOrder.status}
-                                            </span>
-                                            
-                                            <div className="flex flex-col gap-2">
-                                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-0.5">Tracking Number</label>
-                                                <div className="flex gap-2">
-                                                    <input 
-                                                        type="text"
-                                                        placeholder="Enter Tracking #"
-                                                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-accent-blue/10 focus:border-accent-blue transition-all"
-                                                        defaultValue={selectedOrder.trackingNumber || ''}
-                                                        id="tracking-input"
-                                                    />
-                                                    <button 
-                                                        onClick={() => {
-                                                            const val = document.getElementById('tracking-input').value;
-                                                            handleStatusChange(selectedOrder.id, selectedOrder.status, val);
-                                                        }}
-                                                        className="px-4 py-2 bg-text-main text-white text-[10px] font-bold uppercase tracking-wider rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
-                                                    >
-                                                        Update
-                                                    </button>
-                                                </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-0.5">Order Status</label>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border w-fit ${getStatusColor(selectedOrder.status)}`}>
+                                                    <div className={`w-1 h-1 rounded-full ${
+                                                        selectedOrder.status === 'PENDING' ? 'bg-amber-500 animate-pulse' : 
+                                                        selectedOrder.status === 'SHIPPED' ? 'bg-indigo-500' :
+                                                        selectedOrder.status === 'DELIVERED' ? 'bg-emerald-500' :
+                                                        'bg-slate-400'
+                                                    }`}></div>
+                                                    {selectedOrder.status}
+                                                </span>
                                             </div>
+
+                                            <div className="flex flex-col gap-1.5 pt-4 border-t border-slate-200/50">
+                                                <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-0.5">Payment Details</label>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <CreditCard size={14} className="text-slate-400" />
+                                                        <span className="text-xs font-bold text-text-main">{selectedOrder.paymentMethod || 'COD'}</span>
+                                                    </div>
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
+                                                        selectedOrder.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 
+                                                        selectedOrder.paymentStatus === 'FAILED' ? 'bg-red-100 text-red-700' : 
+                                                        'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                        {selectedOrder.paymentStatus || 'PENDING'}
+                                                    </span>
+                                                </div>
+                                                
+                                                {selectedOrder.paymentStatus !== 'PAID' && (
+                                                    <button 
+                                                        onClick={() => handleStatusChange(selectedOrder.id, undefined, undefined, 'PAID')}
+                                                        className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                                                    >
+                                                        <CheckCircle2 size={14} /> Mark as Paid
+                                                    </button>
+                                                )}
+                                                {selectedOrder.paymentStatus === 'PAID' && (
+                                                    <button 
+                                                        onClick={() => handleStatusChange(selectedOrder.id, undefined, undefined, 'PENDING')}
+                                                        className="mt-3 flex items-center justify-center gap-2 w-full py-2 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95 border border-slate-200"
+                                                    >
+                                                        <RotateCcw size={14} /> Revert to Pending
+                                                    </button>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Tracking Number Disabled ... */}
                                         </div>
                                     </div>
                                 </div>
