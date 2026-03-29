@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as Razorpay from 'razorpay';
+import Razorpay from 'razorpay';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -15,6 +15,16 @@ export class PaymentsService {
   }
 
   async createOrder(amount: number, receipt: string) {
+    if (process.env.RAZORPAY_KEY_ID === 'rzp_test_placeholder') {
+      return {
+        id: 'order_mock_' + Math.random().toString(36).substr(2, 9),
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        receipt,
+        status: 'created',
+      };
+    }
+
     const options = {
       amount: Math.round(amount * 100), // amount in the smallest currency unit (paise)
       currency: 'INR',
@@ -31,6 +41,10 @@ export class PaymentsService {
   }
 
   verifySignature(orderId: string, paymentId: string, signature: string): boolean {
+    if (process.env.RAZORPAY_KEY_ID === 'rzp_test_placeholder' && signature === 'mock_signature') {
+      return true;
+    }
+
     const text = orderId + '|' + paymentId;
     const generated_signature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret')

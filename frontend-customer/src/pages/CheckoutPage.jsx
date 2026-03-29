@@ -10,12 +10,13 @@ const CheckoutPage = () => {
   const user = useAuthStore(state => state.user);
   const cart = useCartStore(state => state.cart);
   const cartCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
-  const cartTotal = cart?.items?.reduce((acc, item) => {
+  const cartTotalRaw = cart?.items?.reduce((acc, item) => {
     const discountedPrice = item.product.discountPercentage 
         ? item.product.price * (1 - item.product.discountPercentage / 100)
         : item.product.price;
     return acc + (discountedPrice * item.quantity);
   }, 0) || 0;
+  const cartTotal = Math.round(cartTotalRaw * 100) / 100;
   const clearCart = useCartStore(state => state.clearCart);
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -73,7 +74,8 @@ const CheckoutPage = () => {
     setIsValidating(true);
     try {
       const { validateCoupon } = await import('../api/coupons');
-      const res = await validateCoupon(couponCode, cartTotal);
+      const roundedAmount = Math.round(cartTotal * 100) / 100;
+      const res = await validateCoupon(couponCode, roundedAmount);
       setAppliedCoupon(res.data);
       showNotification(`Coupon ${res.data.code} applied successfully!`, 'success');
     } catch (err) {
@@ -138,6 +140,29 @@ const CheckoutPage = () => {
       });
 
       if (paymentMethod === 'ONLINE') {
+        const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+        
+        // DEVELOPMENT MOCK MODE
+        if (!razorpayKey || razorpayKey === 'rzp_test_placeholder') {
+          showNotification('Development Mode: Simulating Payment...', 'info');
+          setTimeout(async () => {
+            try {
+              await api.post('/orders/verify-payment', {
+                orderId: res.data.id,
+                razorpay_order_id: res.data.razorpayOrderId || 'mock_order_id',
+                razorpay_payment_id: 'mock_payment_id',
+                razorpay_signature: 'mock_signature',
+              });
+              await clearCart();
+              navigate(`/order-success/${res.data.id}`);
+            } catch (err) {
+              showNotification('Mock payment failed to verify. check backend logs.', 'error');
+              setPlacing(false);
+            }
+          }, 1500);
+          return;
+        }
+
         const isLoaded = await loadRazorpay();
         if (!isLoaded) {
           showNotification('Razorpay SDK failed to load. Are you online?', 'error');
@@ -155,7 +180,7 @@ const CheckoutPage = () => {
           handler: async (response) => {
             try {
               // Verify payment on backend (this also updates status to PAID)
-              await api.post('/payments/verify', {
+              await api.post('/orders/verify-payment', {
                 orderId: res.data.id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,

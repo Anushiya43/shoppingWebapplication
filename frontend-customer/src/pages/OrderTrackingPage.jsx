@@ -59,6 +59,27 @@ const OrderTrackingPage = () => {
         }
       }
 
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      
+      // DEVELOPMENT MOCK MODE
+      if (!razorpayKey || razorpayKey === 'rzp_test_placeholder') {
+        setTimeout(async () => {
+          try {
+            await api.post('/orders/verify-payment', {
+              orderId: order.id,
+              razorpay_order_id: razorpayOrderId || 'mock_order_id',
+              razorpay_payment_id: 'mock_payment_id',
+              razorpay_signature: 'mock_signature',
+            });
+            window.location.reload();
+          } catch (err) {
+            console.error('Mock payment failed', err);
+            setPaying(false);
+          }
+        }, 1500);
+        return;
+      }
+
       const isLoaded = await loadRazorpay();
       if (!isLoaded) return;
 

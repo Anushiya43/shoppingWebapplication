@@ -54,4 +54,19 @@ export class OrdersController {
   async getRazorpayOrder(@Req() req, @Param('id') orderId: string) {
     return this.ordersService.getOrCreateRazorpayOrder(req.user.id, orderId);
   }
+
+  @Post('verify-payment')
+  async verifyPayment(
+    @Body('orderId') orderId: string,
+    @Body('razorpay_order_id') razorpayOrderId: string,
+    @Body('razorpay_payment_id') razorpayPaymentId: string,
+    @Body('razorpay_signature') razorpaySignature: string,
+  ) {
+    return this.ordersService.verifyPayment(
+      orderId,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    );
+  }
 }

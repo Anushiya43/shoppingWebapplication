@@ -215,7 +215,8 @@ const OrdersManagementPage = () => {
                 </div>
             ) : (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto text-left">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto text-left">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200">
@@ -231,7 +232,7 @@ const OrdersManagementPage = () => {
                             <tbody className="divide-y divide-slate-100">
                                 {filteredOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-slate-400 font-medium text-sm">
+                                        <td colSpan="7" className="px-6 py-12 text-center text-slate-400 font-medium text-sm">
                                             No orders found matching your criteria.
                                         </td>
                                     </tr>
@@ -322,6 +323,72 @@ const OrdersManagementPage = () => {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden divide-y divide-slate-100">
+                        {filteredOrders.length === 0 ? (
+                            <div className="p-12 text-center">
+                                <Package className="mx-auto text-slate-200 mb-4" size={48} />
+                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No orders found</p>
+                            </div>
+                        ) : (
+                            filteredOrders.map(order => (
+                                <div key={order.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+                                    <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-[10px] font-black text-slate-400 tracking-tighter uppercase px-2 py-0.5 bg-slate-100 rounded border border-slate-200">#{order.id.slice(-8)}</span>
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold border ${getStatusColor(order.status)}`}>
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                            <h3 className="font-bold text-text-main text-sm">{order.user.firstName} {order.user.lastName}</h3>
+                                            <p className="text-[10px] font-semibold text-text-muted truncate max-w-[200px]">{order.user.email}</p>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => setSelectedOrder(order)} className="p-2 text-slate-400 hover:text-accent-blue hover:bg-accent-blue/5 rounded-lg border border-slate-100">
+                                                <Eye size={16} />
+                                            </button>
+                                            <div className="relative group/m-menu">
+                                                <button className="p-2 text-slate-400 hover:text-text-main hover:bg-slate-100 rounded-lg border border-slate-100">
+                                                    <MoreVertical size={16} />
+                                                </button>
+                                                {/* Re-implement individual status buttons for mobile menu if needed, OR just rely on details modal */}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">Order Total</span>
+                                            <span className="font-black text-text-main text-base">₹{parseFloat(order.totalAmount).toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest leading-none mb-1">Status</span>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] font-black text-text-main uppercase tracking-tight">{order.paymentMethod || 'COD'}</span>
+                                                <span className={`text-[9px] font-bold uppercase ${
+                                                    order.paymentStatus === 'PAID' ? 'text-emerald-500' : 
+                                                    order.paymentStatus === 'FAILED' ? 'text-red-500' : 
+                                                    'text-amber-500'
+                                                }`}>{order.paymentStatus || 'PENDING'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[10px] text-text-muted font-bold pt-1">
+                                        <div className="flex items-center gap-1.5 opacity-60">
+                                            <Clock size={12} />
+                                            {new Date(order.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </div>
+                                        <div className="flex items-center gap-1 text-accent-blue">
+                                            View Full Details <ChevronRight size={12} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             )}

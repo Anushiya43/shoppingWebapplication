@@ -103,7 +103,8 @@ const UserManagementPage = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto text-left">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto text-left">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
@@ -189,6 +190,82 @@ const UserManagementPage = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {loading ? (
+                        Array(3).fill(0).map((_, i) => (
+                            <div key={i} className="p-4 space-y-3 animate-pulse">
+                                <div className="flex justify-between items-center">
+                                    <div className="h-4 bg-slate-100 rounded-full w-32"></div>
+                                    <div className="h-6 bg-slate-100 rounded-lg w-16"></div>
+                                </div>
+                                <div className="h-3 bg-slate-100 rounded-full w-48"></div>
+                            </div>
+                        ))
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <UserX className="mx-auto text-slate-200 mb-4" size={48} />
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No users found</p>
+                        </div>
+                    ) : (
+                        filteredUsers.map(user => (
+                            <div key={user.id} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <h3 className="font-bold text-text-main text-sm">{user.firstName} {user.lastName}</h3>
+                                        <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${
+                                            user.role === 'ADMIN' 
+                                            ? 'bg-purple-50 text-purple-700 border-purple-100' 
+                                            : 'bg-slate-50 text-slate-600 border-slate-100'
+                                        }`}>
+                                            {user.role}
+                                        </div>
+                                    </div>
+                                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                            !user.isBlocked ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                                        }`}>
+                                        <div className={`w-1 h-1 rounded-full ${!user.isBlocked ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                                        {user.isBlocked ? 'Blocked' : 'Active'}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 py-3 border-y border-slate-50">
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-text-main">
+                                        <Mail size={14} className="text-accent-blue shrink-0" />
+                                        <span className="truncate">{user.email}</span>
+                                    </div>
+                                    {user.phoneNumber && (
+                                        <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
+                                            <Phone size={14} className="shrink-0" />
+                                            {user.phoneNumber}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1">
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-tighter">
+                                        <Calendar size={12} />
+                                        Joined {new Date(user.createdAt).toLocaleDateString()}
+                                    </div>
+                                    {user.id !== currentAdmin.id && (
+                                        <button 
+                                            onClick={() => handleToggleBlock(user)}
+                                            disabled={blockingId === user.id}
+                                            className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm disabled:opacity-50 ${
+                                                user.isBlocked 
+                                                ? 'bg-emerald-500 text-white' 
+                                                : 'bg-red-500 text-white'
+                                            }`}
+                                        >
+                                            {user.isBlocked ? 'Unblock Account' : 'Block User'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>
